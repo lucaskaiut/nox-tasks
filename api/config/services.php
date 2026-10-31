@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'mcp' => [
+        'rate_limit' => (int) env('MCP_RATE_LIMIT', 120),
+    ],
+
 ];

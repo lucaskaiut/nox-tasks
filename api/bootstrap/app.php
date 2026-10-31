@@ -4,6 +4,8 @@ use App\Modules\ACL\Http\Middleware\EnsurePermission;
 use App\Modules\ApiToken\Http\Middleware\AuthenticateApiToken;
 use App\Modules\ApiToken\Http\Middleware\MultiAuthenticate;
 use App\Modules\Billing\Http\Middleware\EnsureActiveSubscription;
+use App\Modules\Mcp\Http\Middleware\EnsureMcpAccess;
+use App\Modules\Mcp\Http\Middleware\RestrictMcpTokens;
 use App\Modules\Shared\Http\ApiError;
 use App\Modules\Tenant\Exceptions\TenantAccessForbidden;
 use App\Modules\Tenant\Exceptions\TenantCouldNotBeResolved;
@@ -36,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
 
+        // Tokens MCP não são aceitos fora do servidor MCP.
+        $middleware->api(append: [RestrictMcpTokens::class]);
+
         $middleware->alias([
             'tenant' => ResolveTenant::class,
             'permission' => EnsurePermission::class,
@@ -43,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.multi' => MultiAuthenticate::class,
             'subscription.active' => EnsureActiveSubscription::class,
             'tenant.child' => EnsureChildTenant::class,
+            'mcp.access' => EnsureMcpAccess::class,
         ]);
 
         $middleware->prependToPriorityList(

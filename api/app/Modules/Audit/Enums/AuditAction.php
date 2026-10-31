@@ -7,4 +7,5 @@ enum AuditAction: string
     case MasterLogin = 'master_login';
     case TenantSelected = 'tenant_selected';
     case TenantSwitched = 'tenant_switched';
+    case McpToolCalled = 'mcp_tool_called';
 }

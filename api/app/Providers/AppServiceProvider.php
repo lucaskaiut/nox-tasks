@@ -5,9 +5,9 @@ namespace App\Providers;
 use App\Modules\ACL\Models\Role;
 use App\Modules\ACL\Policies\RolePolicy;
 use App\Modules\ApiToken\Models\ApiToken;
+use App\Modules\ApiToken\Policies\ApiTokenPolicy;
 use App\Modules\Assistant\Models\Conversation;
 use App\Modules\Assistant\Policies\ConversationPolicy;
-use App\Modules\ApiToken\Policies\ApiTokenPolicy;
 use App\Modules\Billing\Models\Invoice;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Models\Subscription;
@@ -55,6 +55,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        // Conexões MCP: limite por usuário (agentes podem encadear muitas chamadas).
+        RateLimiter::for('mcp', function (Request $request) {
+            return Limit::perMinute((int) config('services.mcp.rate_limit', 120))
+                ->by('mcp:'.($request->user()?->getKey() ?: $request->ip()));
+        });
 
     }
 

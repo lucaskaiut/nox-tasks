@@ -10,6 +10,7 @@ use App\Modules\Billing\Http\Controllers\InvoiceController;
 use App\Modules\Billing\Http\Controllers\PaymentMethodController;
 use App\Modules\Billing\Http\Controllers\PlanController;
 use App\Modules\Billing\Http\Controllers\SubscriptionController;
+use App\Modules\Mcp\Http\Controllers\McpTokenController;
 use App\Modules\Shared\Http\Controllers\FileUploadController;
 use App\Modules\Tenant\Http\Controllers\TenantController;
 use App\Modules\User\Http\Controllers\UserController;
@@ -127,6 +128,11 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription.active'])->group(func
     Route::get('workspace/dashboard', [WorkspaceController::class, 'dashboard'])->can('viewAny', Project::class);
     Route::get('workspace/members', [WorkspaceController::class, 'members'])->can('assignOnCreate', Task::class);
     Route::get('workspace/tags', [WorkspaceController::class, 'tags'])->can('viewAny', Task::class);
+
+    // Conexões de IA (tokens MCP do próprio usuário)
+    Route::get('mcp/tokens', [McpTokenController::class, 'index'])->middleware('permission:mcp.use');
+    Route::post('mcp/tokens', [McpTokenController::class, 'store'])->middleware('permission:mcp.use');
+    Route::delete('mcp/tokens/{token}', [McpTokenController::class, 'destroy'])->middleware('permission:mcp.use')->whereNumber('token');
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
