@@ -39,6 +39,8 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->seedPlans($result->tenant);
+
+        $this->callWith(WorkspaceDemoSeeder::class, ['tenant' => $result->tenant, 'admin' => $result->user]);
     }
 
     private function seedPlans(Tenant $tenant): void

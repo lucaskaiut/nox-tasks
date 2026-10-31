@@ -42,6 +42,32 @@ enum Permission: string
 
     case ASSISTANT_VIEW = 'assistant.view';
 
+    // --- Projeto: Workspace (clientes, projetos, tarefas, Kanban) ---
+    case CLIENT_READ = 'client.read';
+    case CLIENT_CREATE = 'client.create';
+    case CLIENT_UPDATE = 'client.update';
+    case CLIENT_DELETE = 'client.delete';
+    case CLIENT_MANAGE_USERS = 'client.manage-users';
+
+    case PROJECT_READ = 'project.read';
+    case PROJECT_CREATE = 'project.create';
+    case PROJECT_UPDATE = 'project.update';
+    case PROJECT_ARCHIVE = 'project.archive';
+
+    case TASK_READ = 'task.read';
+    case TASK_CREATE = 'task.create';
+    case TASK_UPDATE = 'task.update';
+    case TASK_DELETE = 'task.delete';
+    case TASK_ASSIGN = 'task.assign';
+    case TASK_MOVE = 'task.move';
+
+    case BOARD_READ = 'board.read';
+    case BOARD_MANAGE = 'board.manage';
+
+    case COMMENT_CREATE = 'comment.create';
+
+    case MCP_USE = 'mcp.use';
+
     /**
      * @return list<string>
      */

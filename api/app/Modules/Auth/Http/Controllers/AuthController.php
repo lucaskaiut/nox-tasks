@@ -65,7 +65,7 @@ class AuthController extends ApiController
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load('roles.permissions');
+        $user = $request->user()->load(['roles.permissions', 'client']);
         /** @var Tenant|null $tenant */
         $tenant = TenantContext::tenant();
 
