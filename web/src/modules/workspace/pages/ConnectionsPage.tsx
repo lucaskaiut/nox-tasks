@@ -46,7 +46,7 @@ export default function ConnectionsPage() {
       />
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <div className="flex gap-3 rounded-ws border border-ws-line bg-ws-panel p-4 md:col-span-2">
+        <div className="flex gap-3 rounded-ws bg-ws-panel shadow-ws p-4 md:col-span-2">
           <ShieldCheck className="size-5 shrink-0 text-ws-accent" aria-hidden="true" />
           <div className="text-[13px] text-ws-ink-2">
             <p className="font-medium text-ws-ink">O agente age como você — e só como você.</p>
@@ -56,16 +56,16 @@ export default function ConnectionsPage() {
             </p>
           </div>
         </div>
-        <div className="rounded-ws border border-ws-line bg-ws-panel p-4">
+        <div className="rounded-ws bg-ws-panel shadow-ws p-4">
           <p className="ws-eyebrow">Endereço do servidor</p>
-          <button type="button" onClick={() => copy(serverUrl)} className="mt-1.5 flex w-full items-center gap-2 text-left font-ws-mono text-[12px] break-all text-ws-ink hover:text-ws-accent">
+          <button type="button" onClick={() => copy(serverUrl)} className="mt-1.5 flex w-full items-center gap-2 text-left tabular-nums text-[12px] break-all text-ws-ink hover:text-ws-accent">
             {serverUrl}
             <Copy className="size-3.5 shrink-0" />
           </button>
         </div>
       </div>
 
-      <Panel eyebrow="Tokens ativos" title="Suas conexões" bodyClassName="p-0">
+      <Panel eyebrow="Tokens ativos" title="Suas conexões" bodyClassName="p-1.5 pt-0">
         {tokens.isLoading ? (
           <div className="p-4">
             <LoadingBlock rows={2} />
@@ -73,11 +73,11 @@ export default function ConnectionsPage() {
         ) : tokens.data?.tokens.length ? (
           <ul>
             {tokens.data.tokens.map((token) => (
-              <li key={token.id} className="flex items-center gap-3 border-b border-ws-line px-4 py-3 last:border-b-0">
+              <li key={token.id} className="flex items-center gap-3 px-4 py-3">
                 <Bot className="size-4 text-ws-ink-3" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] text-ws-ink">{token.name}</p>
-                  <p className="font-ws-mono text-[11px] text-ws-ink-3">
+                  <p className="tabular-nums text-[11px] text-ws-ink-3">
                     criado {relative(token.created_at)} · {token.last_used_at ? `usado ${relative(token.last_used_at)}` : 'nunca usado'} ·{' '}
                     {token.expires_at ? `expira ${dateTime(token.expires_at)}` : 'sem expiração'}
                   </p>
@@ -135,13 +135,13 @@ export default function ConnectionsPage() {
           <div className="flex flex-col gap-4">
             <p className="text-[13px] text-ws-warn">Copie o token agora — ele não será exibido novamente.</p>
             <Field label="Token">
-              <button type="button" onClick={() => copy(issued.token)} className="flex items-center gap-2 rounded-ws border border-ws-line-strong bg-ws-sunken px-2.5 py-2 text-left font-ws-mono text-[12px] break-all text-ws-ink">
+              <button type="button" onClick={() => copy(issued.token)} className="flex items-center gap-2 rounded-ws-sm bg-ws-sunken px-2.5 py-2 text-left tabular-nums text-[12px] break-all text-ws-ink">
                 {issued.token}
                 <Copy className="size-3.5 shrink-0" />
               </button>
             </Field>
             <Field label="Claude Code">
-              <pre className="overflow-x-auto rounded-ws bg-ws-ink p-3 font-ws-mono text-[11.5px] text-ws-canvas">{snippet}</pre>
+              <pre className="overflow-x-auto rounded-ws bg-ws-ink p-3 tabular-nums text-[11.5px] text-ws-canvas">{snippet}</pre>
             </Field>
             <Button size="sm" icon={<Copy className="size-3.5" />} onClick={() => copy(snippet)}>
               Copiar comando

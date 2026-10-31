@@ -214,15 +214,15 @@ body {
  * ---------------------------------------------------------------------------
  * Workspace — identidade visual própria (projetos, tarefas, Kanban).
  * Escopo: elementos dentro de `.ws`. Não compartilha tokens com o painel
- * administrativo: papel/tinta, um único acento, cantos de 3px, linhas finas,
- * sem sombras decorativas, tipografia IBM Plex.
+ * administrativo: papel/tinta, um único acento, superfícies sem bordas que se
+ * destacam do fundo por cor e sombras suaves, cantos de 6–12px, Inter.
  * ---------------------------------------------------------------------------
  */
 .ws {
-  --ws-canvas: #f4f3ef;
+  --ws-canvas: #eeece7;
   --ws-panel: #fdfdfb;
-  --ws-sunken: #ebe9e3;
-  --ws-hover: #e9e7e0;
+  --ws-sunken: #f3f1ec;
+  --ws-hover: #ecebe5;
   --ws-line: #e0ddd5;
   --ws-line-strong: #c9c5ba;
   --ws-ink: #1b1a17;
@@ -242,19 +242,24 @@ body {
   --ws-info-tint: #e0e8f4;
   --ws-focus: rgb(29 92 74 / 0.45);
   --ws-scrim: rgb(27 26 23 / 0.38);
+  --ws-shadow-xs: 0 1px 2px rgb(27 26 23 / 0.07);
+  --ws-shadow-sm: 0 1px 2px rgb(27 26 23 / 0.05), 0 2px 6px rgb(27 26 23 / 0.05);
+  --ws-shadow: 0 1px 3px rgb(27 26 23 / 0.05), 0 6px 18px -4px rgb(27 26 23 / 0.08);
+  --ws-shadow-pop: 0 2px 6px rgb(27 26 23 / 0.06), 0 18px 40px -8px rgb(27 26 23 / 0.22);
+  --ws-shadow-up: 0 -2px 12px rgb(27 26 23 / 0.07);
 
   font-family: var(--font-ws);
   color: var(--ws-ink);
   background: var(--ws-canvas);
-  font-feature-settings: 'ss02', 'zero';
+  font-feature-settings: 'cv11';
 }
 
 .dark .ws,
 .ws.dark {
-  --ws-canvas: #121311;
-  --ws-panel: #191a17;
-  --ws-sunken: #0d0e0c;
-  --ws-hover: #23241f;
+  --ws-canvas: #0e0f0d;
+  --ws-panel: #1b1c19;
+  --ws-sunken: #232420;
+  --ws-hover: #2a2b26;
   --ws-line: #2a2b26;
   --ws-line-strong: #3b3c35;
   --ws-ink: #ecebe5;
@@ -274,11 +279,15 @@ body {
   --ws-info-tint: rgb(134 169 224 / 0.14);
   --ws-focus: rgb(108 195 160 / 0.5);
   --ws-scrim: rgb(0 0 0 / 0.6);
+  --ws-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ws-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35), 0 2px 8px rgb(0 0 0 / 0.25);
+  --ws-shadow: 0 1px 3px rgb(0 0 0 / 0.4), 0 8px 22px -6px rgb(0 0 0 / 0.5);
+  --ws-shadow-pop: 0 2px 8px rgb(0 0 0 / 0.45), 0 22px 48px -10px rgb(0 0 0 / 0.7);
+  --ws-shadow-up: 0 -2px 14px rgb(0 0 0 / 0.45);
 }
 
 @theme inline {
-  --font-ws: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-ws-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-ws: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   --color-ws-canvas: var(--ws-canvas);
   --color-ws-panel: var(--ws-panel);
@@ -303,13 +312,21 @@ body {
   --color-ws-info-tint: var(--ws-info-tint);
   --color-ws-scrim: var(--ws-scrim);
 
-  --radius-ws: 3px;
+  --radius-ws-sm: 6px;
+  --radius-ws: 8px;
+  --radius-ws-lg: 12px;
+
+  --shadow-ws-xs: var(--ws-shadow-xs);
+  --shadow-ws-sm: var(--ws-shadow-sm);
+  --shadow-ws: var(--ws-shadow);
+  --shadow-ws-pop: var(--ws-shadow-pop);
+  --shadow-ws-up: var(--ws-shadow-up);
 }
 
 .ws *:focus-visible {
   outline: 2px solid var(--ws-focus);
-  outline-offset: 1px;
-  border-radius: 3px;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .ws ::selection {
@@ -317,11 +334,12 @@ body {
   color: var(--ws-accent-ink);
 }
 
-/* Rótulos "eyebrow" em caixa alta monoespaçada */
+/* Rótulos "eyebrow" em caixa alta */
 .ws-eyebrow {
-  font-family: var(--font-ws-mono);
   font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
   text-transform: uppercase;
   color: var(--ws-ink-3);
 }

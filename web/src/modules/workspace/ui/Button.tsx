@@ -6,13 +6,13 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md'
 
 const base =
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-ws border font-medium transition-colors duration-100 disabled:pointer-events-none disabled:opacity-50 select-none'
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-ws-sm font-medium transition-[background-color,box-shadow,color] duration-100 disabled:pointer-events-none disabled:opacity-50 select-none'
 
 const variants: Record<Variant, string> = {
-  primary: 'border-ws-accent bg-ws-accent text-ws-accent-ink hover:bg-ws-accent-hover hover:border-ws-accent-hover',
-  secondary: 'border-ws-line-strong bg-ws-panel text-ws-ink hover:bg-ws-hover',
-  ghost: 'border-transparent bg-transparent text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink',
-  danger: 'border-ws-danger bg-transparent text-ws-danger hover:bg-ws-danger-tint',
+  primary: 'bg-ws-accent text-ws-accent-ink shadow-ws-sm hover:bg-ws-accent-hover',
+  secondary: 'bg-ws-panel text-ws-ink shadow-ws-sm hover:bg-ws-hover',
+  ghost: 'bg-transparent text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink',
+  danger: 'bg-ws-danger-tint text-ws-danger hover:bg-ws-danger hover:text-white',
 }
 
 const sizes: Record<Size, string> = {
@@ -70,7 +70,7 @@ export const IconButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
         aria-label={label}
         title={label}
         className={cn(
-          'inline-flex size-8 items-center justify-center rounded-ws text-ws-ink-2 transition-colors hover:bg-ws-hover hover:text-ws-ink disabled:opacity-40',
+          'inline-flex size-8 items-center justify-center rounded-ws-sm text-ws-ink-2 transition-colors hover:bg-ws-hover hover:text-ws-ink disabled:opacity-40',
           className,
         )}
         {...props}

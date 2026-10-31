@@ -38,15 +38,15 @@ export default function BoardsPage() {
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {boards.data.data.map((board) => (
             <li key={board.id}>
-              <Link to={`/w/boards/${board.id}`} className="block rounded-ws border border-ws-line bg-ws-panel p-4 hover:border-ws-line-strong">
+              <Link to={`/w/boards/${board.id}`} className="block rounded-ws bg-ws-panel p-4 shadow-ws transition-shadow hover:shadow-ws-pop">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[14px] font-medium text-ws-ink">{board.name}</p>
-                  <span className="font-ws-mono text-[11px] text-ws-ink-3">{board.projects_count ?? 0} proj.</span>
+                  <span className="tabular-nums text-[11px] text-ws-ink-3">{board.projects_count ?? 0} proj.</span>
                 </div>
                 {board.description && <p className="mt-1 line-clamp-2 text-[12.5px] text-ws-ink-2">{board.description}</p>}
                 <div className="mt-4 flex gap-1">
                   {board.columns?.map((column) => (
-                    <span key={column.id} className="h-1.5 flex-1" style={{ background: column.color }} title={column.name} />
+                    <span key={column.id} className="h-1.5 flex-1 rounded-full" style={{ background: column.color }} title={column.name} />
                   ))}
                 </div>
                 <p className="mt-2 truncate text-[12px] text-ws-ink-3">{board.columns?.map((c) => c.name).join(' → ')}</p>
@@ -103,7 +103,7 @@ function ColumnRow({ column, boardId, onDelete }: { column: BoardColumn; boardId
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-ws-line bg-ws-panel px-3 py-2.5 last:border-b-0 md:grid-cols-[auto_minmax(0,1fr)_200px_auto_auto]', isDragging && 'relative z-10 border border-ws-accent')}
+      className={cn('grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-ws-sm bg-ws-panel px-3 py-2.5 md:grid-cols-[auto_minmax(0,1fr)_200px_auto_auto]', isDragging && 'relative z-10 rounded-ws shadow-ws-pop')}
     >
       <button type="button" className="cursor-grab touch-none text-ws-ink-3 hover:text-ws-ink" aria-label={`Reordenar ${column.name}`} {...attributes} {...listeners}>
         <GripVertical className="size-4" />
@@ -115,7 +115,7 @@ function ColumnRow({ column, boardId, onDelete }: { column: BoardColumn; boardId
           onChange={(e) => setName(e.target.value)}
           onBlur={() => name.trim() && name !== column.name && update.mutate({ name: name.trim() })}
           aria-label="Nome da coluna"
-          className="h-8 border-transparent bg-transparent hover:border-ws-line-strong"
+          className="h-8 bg-transparent shadow-none hover:bg-ws-sunken hover:shadow-none"
         />
       </div>
       <SelectInput
@@ -139,7 +139,7 @@ function ColumnRow({ column, boardId, onDelete }: { column: BoardColumn; boardId
             aria-checked={column.color === color}
             aria-label={`Cor ${color}`}
             onClick={() => update.mutate({ color })}
-            className={cn('size-4 rounded-[2px] border', column.color === color ? 'border-ws-ink ring-1 ring-ws-ink' : 'border-transparent')}
+            className={cn('size-4 rounded-full transition-transform', column.color === color ? 'scale-125 shadow-ws-sm' : 'opacity-70 hover:opacity-100')}
             style={{ background: color }}
           />
         ))}
@@ -211,7 +211,7 @@ export function BoardPage() {
       <Panel
         eyebrow="Fluxo"
         title="Colunas"
-        bodyClassName="p-0"
+        bodyClassName="p-1.5 pt-0"
         actions={
           <Button size="sm" icon={<Plus className="size-3.5" />} loading={add.isPending} onClick={() => add.mutate(undefined)}>
             Coluna
@@ -232,7 +232,7 @@ export function BoardPage() {
 
       <dl className="mt-4 grid gap-3 text-[12.5px] sm:grid-cols-2 lg:grid-cols-4">
         {COLUMN_KINDS.map((kind) => (
-          <div key={kind.value} className="border-l-2 border-ws-line pl-3">
+          <div key={kind.value} className="rounded-ws bg-ws-panel px-3 py-2.5 shadow-ws-sm">
             <dt className="font-medium text-ws-ink">{kind.label}</dt>
             <dd className="text-ws-ink-3">{kind.hint}</dd>
           </div>

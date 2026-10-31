@@ -16,7 +16,7 @@ export function WsToaster() {
         const Icon = icons[item.type]
 
         return (
-          <div key={item.id} className="ws-rise pointer-events-auto flex gap-2.5 rounded-ws border border-ws-line-strong bg-ws-panel px-3.5 py-3">
+          <div key={item.id} className="ws-rise pointer-events-auto flex gap-2.5 rounded-ws bg-ws-panel px-3.5 py-3 shadow-ws-pop">
             <Icon className={cn('mt-0.5 size-4 shrink-0', tones[item.type])} aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium text-ws-ink">{item.title}</p>

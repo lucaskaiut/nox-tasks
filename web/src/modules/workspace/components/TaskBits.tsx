@@ -31,7 +31,7 @@ export function DueMark({ due, closed, className }: { due: string | null; closed
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 font-ws-mono text-[11.5px] tabular-nums',
+        'inline-flex items-center gap-1 tabular-nums text-[11.5px]',
         late ? 'text-ws-danger' : soon ? 'text-ws-warn' : 'text-ws-ink-3',
         className,
       )}
@@ -82,7 +82,7 @@ export function TaskSignals({ task }: { task: Task }) {
   const recent = task.last_comment_at && Date.now() - new Date(task.last_comment_at).getTime() < 48 * 3600 * 1000
 
   return (
-    <span className="inline-flex items-center gap-2.5 font-ws-mono text-[11px] text-ws-ink-3">
+    <span className="inline-flex items-center gap-2.5 tabular-nums text-[11px] text-ws-ink-3">
       {task.subtasks_summary && task.subtasks_summary.total > 0 && (
         <span
           className={cn('inline-flex items-center gap-1', task.subtasks_summary.percent === 100 && 'text-ws-ok')}
@@ -109,7 +109,7 @@ export function Tags({ tags }: { tags?: Array<{ name: string }> }) {
   return (
     <span className="flex flex-wrap gap-1">
       {tags.map((tag) => (
-        <span key={tag.name} className="rounded-[2px] border border-ws-line px-1 font-ws-mono text-[10.5px] text-ws-ink-2">
+        <span key={tag.name} className="rounded-[5px] bg-ws-hover px-1.5 tabular-nums text-[10.5px] text-ws-ink-2">
           #{tag.name}
         </span>
       ))}

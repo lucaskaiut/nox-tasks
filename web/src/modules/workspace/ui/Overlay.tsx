@@ -50,11 +50,11 @@ export function Sheet({
           aria-modal="true"
           aria-label={title}
           className={cn(
-            'ws-slide-in relative flex h-full w-full flex-col border-l border-ws-line-strong bg-ws-panel',
+            'ws-slide-in relative flex h-full w-full flex-col bg-ws-panel shadow-ws-pop md:my-2 md:mr-2 md:h-[calc(100%-1rem)] md:rounded-ws-lg',
             wide ? 'max-w-2xl' : 'max-w-lg',
           )}
         >
-          <header className="flex items-start justify-between gap-3 border-b border-ws-line px-5 py-4">
+          <header className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
             <div>
               {eyebrow && <p className="ws-eyebrow mb-1">{eyebrow}</p>}
               <h2 className="text-[16px] font-semibold text-ws-ink">{title}</h2>
@@ -64,7 +64,7 @@ export function Sheet({
             </IconButton>
           </header>
           <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
-          {footer && <footer className="flex justify-end gap-2 border-t border-ws-line px-5 py-3">{footer}</footer>}
+          {footer && <footer className="flex justify-end gap-2 bg-ws-sunken px-5 py-3 md:rounded-b-ws-lg">{footer}</footer>}
         </div>
       </div>
     </WsPortal>
@@ -100,14 +100,14 @@ export function Confirm({
     <WsPortal>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-ws-scrim" onClick={onClose} aria-hidden="true" />
-        <div role="alertdialog" aria-modal="true" aria-label={title} className="ws-rise relative w-full max-w-md rounded-ws border border-ws-line-strong bg-ws-panel">
+        <div role="alertdialog" aria-modal="true" aria-label={title} className="ws-rise relative w-full max-w-md overflow-hidden rounded-ws-lg bg-ws-panel shadow-ws-pop">
           <div className="px-5 pt-5 pb-4">
             <h2 className="text-[15px] font-semibold text-ws-ink">{title}</h2>
             {description && <p className="mt-1.5 text-[13px] text-ws-ink-2">{description}</p>}
             {children && <div className="mt-4">{children}</div>}
           </div>
-          <div className="flex justify-end gap-2 border-t border-ws-line px-5 py-3">
-            <button type="button" onClick={onClose} className="h-8 rounded-ws px-3 text-[13px] text-ws-ink-2 hover:bg-ws-hover">
+          <div className="flex justify-end gap-2 bg-ws-sunken px-5 py-3">
+            <button type="button" onClick={onClose} className="h-8 rounded-ws-sm px-3 text-[13px] text-ws-ink-2 hover:bg-ws-hover">
               Cancelar
             </button>
             <button
@@ -115,7 +115,7 @@ export function Confirm({
               disabled={loading}
               onClick={onConfirm}
               className={cn(
-                'h-8 rounded-ws px-3 text-[13px] font-medium disabled:opacity-50',
+                'h-8 rounded-ws-sm px-3 text-[13px] font-medium shadow-ws-sm disabled:opacity-50',
                 destructive ? 'bg-ws-danger text-white hover:opacity-90' : 'bg-ws-accent text-ws-accent-ink hover:bg-ws-accent-hover',
               )}
             >
@@ -162,7 +162,7 @@ export function Menu({
         <div
           role="menu"
           className={cn(
-            'ws-rise absolute top-full z-40 mt-1 min-w-48 rounded-ws border border-ws-line-strong bg-ws-panel py-1',
+            'ws-rise absolute top-full z-40 mt-1.5 min-w-48 rounded-ws bg-ws-panel p-1 shadow-ws-pop',
             align === 'end' ? 'right-0' : 'left-0',
             className,
           )}
@@ -191,7 +191,7 @@ export function MenuItem({
       role="menuitem"
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-ws-hover',
+        'flex w-full items-center gap-2 rounded-ws-sm px-2.5 py-1.5 text-left text-[13px] hover:bg-ws-hover',
         danger ? 'text-ws-danger' : 'text-ws-ink',
       )}
     >

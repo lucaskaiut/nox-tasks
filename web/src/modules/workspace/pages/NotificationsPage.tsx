@@ -30,7 +30,7 @@ export default function NotificationsPage() {
       {notifications.isLoading ? (
         <LoadingBlock />
       ) : notifications.data?.data.length ? (
-        <ul className="overflow-hidden rounded-ws border border-ws-line bg-ws-panel">
+        <ul className="rounded-ws bg-ws-panel p-1.5 shadow-ws">
           {notifications.data.data.map((item) => (
             <li key={item.id}>
               <button
@@ -40,13 +40,13 @@ export default function NotificationsPage() {
                   if (item.task_id) navigate(`/w/tasks/${item.task_id}`)
                   else if (item.project_id) navigate(`/w/projects/${item.project_id}`)
                 }}
-                className={cn('flex w-full gap-3 border-b border-ws-line px-4 py-3 text-left last:border-b-0 hover:bg-ws-hover', !item.read_at && 'bg-ws-accent-tint/40')}
+                className={cn('flex w-full gap-3 rounded-ws-sm px-3 py-3 text-left hover:bg-ws-hover', !item.read_at && 'bg-ws-accent-tint/40')}
               >
                 <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', item.read_at ? 'bg-transparent' : 'bg-ws-accent')} aria-label={item.read_at ? undefined : 'Não lida'} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13.5px] font-medium text-ws-ink">{item.title}</span>
                   <span className="block text-[13px] text-ws-ink-2">{item.message}</span>
-                  <span className="mt-1 block font-ws-mono text-[11px] text-ws-ink-3">
+                  <span className="mt-1 block tabular-nums text-[11px] text-ws-ink-3">
                     {item.project_name && `${item.project_name} · `}
                     {relative(item.created_at)}
                   </span>

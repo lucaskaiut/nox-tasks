@@ -22,7 +22,7 @@ function Distribution({ data }: { data: Dashboard['status_distribution'] }) {
 
   return (
     <div>
-      <div className="flex h-2.5 w-full overflow-hidden rounded-[1px] bg-ws-sunken" role="img" aria-label="Distribuição de tarefas por status">
+      <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-ws-hover" role="img" aria-label="Distribuição de tarefas por status">
         {total > 0 &&
           data.map((item) => (
             <div key={item.kind} style={{ width: `${(item.total / total) * 100}%`, background: KIND_COLORS[item.kind] }} />
@@ -32,10 +32,10 @@ function Distribution({ data }: { data: Dashboard['status_distribution'] }) {
         {data.map((item) => (
           <div key={item.kind}>
             <dt className="flex items-center gap-1.5 text-[12px] text-ws-ink-2">
-              <span className="size-2 rounded-[1px]" style={{ background: KIND_COLORS[item.kind] }} aria-hidden="true" />
+              <span className="size-2 rounded-full" style={{ background: KIND_COLORS[item.kind] }} aria-hidden="true" />
               {item.label}
             </dt>
-            <dd className="mt-0.5 font-ws-mono text-[18px] text-ws-ink tabular-nums">{item.total}</dd>
+            <dd className="mt-0.5 tabular-nums text-[18px] text-ws-ink">{item.total}</dd>
           </div>
         ))}
       </dl>
@@ -54,13 +54,13 @@ function PriorityBars({ data }: { data: Dashboard['priority_distribution'] }) {
         .map((item) => (
           <li key={item.priority} className="grid grid-cols-[72px_1fr_32px] items-center gap-3 text-[12.5px]">
             <span className="text-ws-ink-2">{item.label}</span>
-            <span className="h-2 bg-ws-sunken">
+            <span className="h-2 overflow-hidden rounded-full bg-ws-hover">
               <span
-                className={cn('block h-full', item.priority === 'urgent' ? 'bg-ws-danger' : item.priority === 'high' ? 'bg-ws-warn' : 'bg-ws-ink-3')}
+                className={cn('block h-full rounded-full', item.priority === 'urgent' ? 'bg-ws-danger' : item.priority === 'high' ? 'bg-ws-warn' : 'bg-ws-ink-3')}
                 style={{ width: `${(item.total / max) * 100}%` }}
               />
             </span>
-            <span className="text-right font-ws-mono text-ws-ink tabular-nums">{item.total}</span>
+            <span className="text-right tabular-nums text-ws-ink">{item.total}</span>
           </li>
         ))}
     </ul>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-y-5 rounded-ws border border-ws-line bg-ws-panel px-5 py-5 md:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-y-5 rounded-ws bg-ws-panel shadow-ws px-5 py-5 md:grid-cols-5">
         <Stat label={isClient ? 'Em andamento' : 'Projetos ativos'} value={m.active_projects} />
         <Stat label="Tarefas abertas" value={m.open_tasks} hint={m.my_open_tasks !== null ? `${m.my_open_tasks} com você` : undefined} />
         <Stat label="Atrasadas" value={m.overdue_tasks} tone={m.overdue_tasks > 0 ? 'danger' : undefined} />
@@ -119,7 +119,7 @@ export default function DashboardPage() {
           <Panel
             eyebrow="Atenção"
             title="Tarefas prioritárias"
-            bodyClassName="p-0"
+            bodyClassName="p-1.5 pt-0"
             actions={<ButtonLink to="/w/tasks?priority=urgent,high" variant="ghost" size="sm">Ver todas</ButtonLink>}
           >
             {data.priority_tasks.length === 0 ? (
@@ -129,7 +129,7 @@ export default function DashboardPage() {
             )}
           </Panel>
 
-          <Panel eyebrow="Próximos 14 dias" title="Prazos" bodyClassName="p-0">
+          <Panel eyebrow="Próximos 14 dias" title="Prazos" bodyClassName="p-1.5 pt-0">
             {data.upcoming_deadlines.length === 0 ? (
               <p className="px-4 py-6 text-[13px] text-ws-ink-3">Nenhum prazo nas próximas duas semanas.</p>
             ) : (
@@ -146,7 +146,7 @@ export default function DashboardPage() {
               <ul className="grid gap-3 sm:grid-cols-2">
                 {projects.data.data.map((project) => (
                   <li key={project.id}>
-                    <Link to={`/w/projects/${project.id}`} className="group block rounded-ws border border-ws-line p-3 hover:border-ws-line-strong">
+                    <Link to={`/w/projects/${project.id}`} className="group block rounded-ws bg-ws-sunken p-3 transition-colors hover:bg-ws-hover">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-[13.5px] font-medium text-ws-ink">{project.name}</p>
@@ -155,10 +155,10 @@ export default function DashboardPage() {
                         <ArrowUpRight className="size-3.5 text-ws-ink-3 group-hover:text-ws-ink" aria-hidden="true" />
                       </div>
                       <div className="mt-3 flex items-center gap-2">
-                        <div className="h-1 flex-1 bg-ws-sunken">
-                          <div className="h-full bg-ws-accent" style={{ width: `${project.progress?.percent ?? 0}%` }} />
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-ws-hover">
+                          <div className="h-full rounded-full bg-ws-accent" style={{ width: `${project.progress?.percent ?? 0}%` }} />
                         </div>
-                        <span className="font-ws-mono text-[11px] text-ws-ink-2 tabular-nums">{project.progress?.percent ?? 0}%</span>
+                        <span className="tabular-nums text-[11px] text-ws-ink-2">{project.progress?.percent ?? 0}%</span>
                       </div>
                     </Link>
                   </li>

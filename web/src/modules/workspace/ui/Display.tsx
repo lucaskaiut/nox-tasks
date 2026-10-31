@@ -15,14 +15,14 @@ const tones: Record<Tone, string> = {
 
 export function Pill({ tone = 'neutral', children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex h-5 items-center gap-1 rounded-[2px] px-1.5 text-[11.5px] font-medium', tones[tone], className)}>
+    <span className={cn('inline-flex h-5 items-center gap-1 rounded-[5px] px-1.5 text-[11.5px] font-medium', tones[tone], className)}>
       {children}
     </span>
   )
 }
 
 export function Dot({ color, className }: { color: string; className?: string }) {
-  return <span aria-hidden="true" className={cn('inline-block size-2 shrink-0 rounded-[1px]', className)} style={{ background: color }} />
+  return <span aria-hidden="true" className={cn('inline-block size-2 shrink-0 rounded-full', className)} style={{ background: color }} />
 }
 
 export function Initials({ name, size = 'sm', className }: { name?: string | null; size?: 'xs' | 'sm' | 'md'; className?: string }) {
@@ -38,7 +38,7 @@ export function Initials({ name, size = 'sm', className }: { name?: string | nul
     <span
       title={name ?? undefined}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-ws border border-ws-line-strong bg-ws-sunken font-ws-mono font-medium text-ws-ink-2',
+        'inline-flex shrink-0 items-center justify-center rounded-ws-sm bg-ws-hover tabular-nums font-medium text-ws-ink-2',
         size === 'xs' && 'size-5 text-[9.5px]',
         size === 'sm' && 'size-6 text-[10.5px]',
         size === 'md' && 'size-8 text-[12px]',
@@ -66,9 +66,9 @@ export function Panel({
   bodyClassName?: string
 }) {
   return (
-    <section className={cn('rounded-ws border border-ws-line bg-ws-panel', className)}>
+    <section className={cn('rounded-ws bg-ws-panel shadow-ws', className)}>
       {(title || actions || eyebrow) && (
-        <header className="flex min-h-11 items-center justify-between gap-3 border-b border-ws-line px-4 py-2">
+        <header className="flex min-h-11 items-center justify-between gap-3 px-4 pt-3 pb-1">
           <div className="min-w-0">
             {eyebrow && <p className="ws-eyebrow">{eyebrow}</p>}
             {title && <h2 className="truncate text-[13.5px] font-semibold text-ws-ink">{title}</h2>}
@@ -95,7 +95,7 @@ export function PageHeader({
   meta?: ReactNode
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 border-b border-ws-line pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="mb-6 flex flex-col gap-4 pb-1 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
         {eyebrow && <p className="ws-eyebrow mb-1.5">{eyebrow}</p>}
         <h1 className="text-[22px] leading-tight font-semibold tracking-[-0.01em] text-ws-ink md:text-[26px]">{title}</h1>
@@ -121,7 +121,7 @@ export function Empty({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-col items-start gap-2 rounded-ws border border-dashed border-ws-line-strong px-5 py-8', className)}>
+    <div className={cn('flex flex-col items-start gap-2 rounded-ws bg-ws-panel px-5 py-8 shadow-ws-sm', className)}>
       {Icon && <Icon className="size-5 text-ws-ink-3" strokeWidth={1.5} aria-hidden="true" />}
       <p className="text-[14px] font-medium text-ws-ink">{title}</p>
       {description && <p className="max-w-md text-[13px] text-ws-ink-2">{description}</p>}
@@ -139,10 +139,10 @@ export function Bar({ value, className, tone = 'accent' }: { value: number; clas
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={cn('h-1.5 w-full overflow-hidden rounded-[1px] bg-ws-sunken', className)}
+      className={cn('h-1.5 w-full overflow-hidden rounded-full bg-ws-hover', className)}
     >
       <div
-        className={cn('h-full transition-[width] duration-300', tone === 'accent' ? 'bg-ws-accent' : 'bg-ws-danger')}
+        className={cn('h-full rounded-full transition-[width] duration-300', tone === 'accent' ? 'bg-ws-accent' : 'bg-ws-danger')}
         style={{ width: `${clamped}%` }}
       />
     </div>
@@ -151,11 +151,11 @@ export function Bar({ value, className, tone = 'accent' }: { value: number; clas
 
 export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'danger' | 'accent' }) {
   return (
-    <div className="flex flex-col gap-1 border-l-2 border-ws-line px-4 py-1 first:border-l-0 first:pl-0 md:first:pl-0">
+    <div className="flex flex-col gap-1 px-4 py-1 first:pl-0">
       <span className="ws-eyebrow">{label}</span>
       <span
         className={cn(
-          'font-ws-mono text-[28px] leading-none font-medium tracking-[-0.02em] tabular-nums',
+          'tabular-nums text-[28px] leading-none font-medium tracking-[-0.02em]',
           tone === 'danger' ? 'text-ws-danger' : tone === 'accent' ? 'text-ws-accent' : 'text-ws-ink',
         )}
       >
@@ -167,7 +167,7 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-ws bg-ws-sunken', className)} />
+  return <div className={cn('animate-pulse rounded-ws bg-ws-hover', className)} />
 }
 
 export function LoadingBlock({ rows = 4 }: { rows?: number }) {
@@ -182,7 +182,7 @@ export function LoadingBlock({ rows = 4 }: { rows?: number }) {
 
 export function ErrorBlock({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-ws border border-ws-danger/40 bg-ws-danger-tint px-4 py-3 text-[13px] text-ws-danger">
+    <div className="rounded-ws bg-ws-danger-tint px-4 py-3 text-[13px] text-ws-danger">
       {message}
       {onRetry && (
         <button type="button" onClick={onRetry} className="ml-2 underline underline-offset-2">

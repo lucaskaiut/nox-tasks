@@ -33,16 +33,16 @@ export function ActivityFeed({ items, showTarget = true }: { items: Activity[]; 
               {lines.length > 0 && (
                 <ul className="mt-1 flex flex-col gap-0.5">
                   {lines.map((line) => (
-                    <li key={line} className="font-ws-mono text-[11.5px] text-ws-ink-3">
+                    <li key={line} className="tabular-nums text-[11.5px] text-ws-ink-3">
                       {line}
                     </li>
                   ))}
                 </ul>
               )}
-              <p className="mt-1 flex items-center gap-2 font-ws-mono text-[11px] text-ws-ink-3">
+              <p className="mt-1 flex items-center gap-2 tabular-nums text-[11px] text-ws-ink-3">
                 {relative(activity.created_at)}
                 {activity.source === 'mcp' && (
-                  <span className="inline-flex items-center gap-1 rounded-[2px] bg-ws-accent-tint px-1 text-ws-accent" title="Executado por um agente de IA via MCP">
+                  <span className="inline-flex items-center gap-1 rounded-[5px] bg-ws-accent-tint px-1.5 text-ws-accent" title="Executado por um agente de IA via MCP">
                     <Bot className="size-3" aria-hidden="true" /> agente IA
                   </span>
                 )}

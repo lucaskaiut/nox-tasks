@@ -38,12 +38,12 @@ function SubtaskList({ task, editable }: { task: Task; editable: boolean }) {
     <Panel
       eyebrow="Checklist"
       title={`Subtarefas · ${done}/${subtasks.length}`}
-      actions={subtasks.length > 0 && <span className="font-ws-mono text-[12px] text-ws-ink-2">{Math.round((done / subtasks.length) * 100)}%</span>}
+      actions={subtasks.length > 0 && <span className="tabular-nums text-[12px] text-ws-ink-2">{Math.round((done / subtasks.length) * 100)}%</span>}
     >
       {subtasks.length > 0 && <Bar value={(done / subtasks.length) * 100} className="mb-3" />}
       <ul className="flex flex-col">
         {subtasks.map((subtask) => (
-          <li key={subtask.id} className="group flex items-center gap-2.5 border-b border-ws-line py-2 last:border-b-0">
+          <li key={subtask.id} className="group flex items-center gap-2.5 py-2">
             <input
               type="checkbox"
               checked={subtask.status === 'done'}
@@ -112,11 +112,11 @@ function Comments({ task }: { task: Task }) {
                     <Bot className="size-3" /> via agente
                   </Pill>
                 )}
-                <span className="font-ws-mono text-[11px] text-ws-ink-3" title={dateTime(comment.created_at)}>
+                <span className="tabular-nums text-[11px] text-ws-ink-3" title={dateTime(comment.created_at)}>
                   {relative(comment.created_at)}
                 </span>
               </p>
-              <p className={cn('mt-1 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ws-ink', comment.visibility === 'internal' && !isClient && 'border-l-2 border-ws-line-strong pl-2.5')}>
+              <p className={cn('mt-1 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ws-ink', comment.visibility === 'internal' && !isClient && 'rounded-ws-sm bg-ws-sunken px-2.5 py-1.5')}>
                 {comment.body}
               </p>
             </div>
@@ -127,7 +127,7 @@ function Comments({ task }: { task: Task }) {
 
       {can(Permission.COMMENT_CREATE) && (
         <form
-          className="mt-5 border-t border-ws-line pt-4"
+          className="mt-5 rounded-ws bg-ws-sunken p-3"
           onSubmit={async (event) => {
             event.preventDefault()
             if (!body.trim()) return
@@ -194,13 +194,13 @@ function Attachments({ task }: { task: Task }) {
       {attachments.data?.length ? (
         <ul className="flex flex-col">
           {attachments.data.map((file) => (
-            <li key={file.id} className="flex items-center gap-2 border-b border-ws-line py-2 text-[13px] last:border-b-0">
+            <li key={file.id} className="flex items-center gap-2 py-2 text-[13px]">
               <Paperclip className="size-3.5 text-ws-ink-3" aria-hidden="true" />
               <a href={wsApi.tasks.downloadUrl(file.id)} className="min-w-0 flex-1 truncate text-ws-ink hover:underline">
                 {file.name}
               </a>
               {!isClient && file.visibility === 'internal' && <Lock className="size-3 text-ws-ink-3" aria-label="Interno" />}
-              <span className="font-ws-mono text-[11px] text-ws-ink-3">{fileSize(file.size)}</span>
+              <span className="tabular-nums text-[11px] text-ws-ink-3">{fileSize(file.size)}</span>
               <a href={wsApi.tasks.downloadUrl(file.id)} aria-label={`Baixar ${file.name}`} className="text-ws-ink-3 hover:text-ws-ink">
                 <Download className="size-3.5" />
               </a>
@@ -253,7 +253,7 @@ export default function TaskPage() {
         )}
       </nav>
 
-      <div className="mb-6 flex flex-col gap-4 border-b border-ws-line pb-5 md:flex-row md:items-start md:justify-between">
+      <div className="mb-6 flex flex-col gap-4 pb-5 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <PriorityMark priority={t.priority} withLabel />
@@ -299,7 +299,7 @@ export default function TaskPage() {
 
         <aside className="flex flex-col gap-6">
           <Panel eyebrow="Propriedades" title="Andamento" bodyClassName="px-4 py-1">
-            <dl className="divide-y divide-ws-line">
+            <dl className="flex flex-col">
               <Meta label="Status">
                 {canManage(Permission.TASK_MOVE) && columns.length > 0 ? (
                   <SelectInput aria-label="Status" value={t.status?.id ?? ''} onChange={(e) => move.mutate(e.target.value)} className="h-8">
@@ -311,7 +311,7 @@ export default function TaskPage() {
                   </SelectInput>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-[1px]" style={{ background: t.status?.color }} />
+                    <span className="size-2 rounded-full" style={{ background: t.status?.color }} />
                     {t.status?.name}
                   </span>
                 )}

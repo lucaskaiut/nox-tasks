@@ -10,11 +10,11 @@ export function TaskRow({ task, showProject = true, showVisibility = true }: { t
   return (
     <Link
       to={`/w/tasks/${task.id}`}
-      className="group grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 border-b border-ws-line px-4 py-2.5 transition-colors last:border-b-0 hover:bg-ws-hover md:grid-cols-[auto_minmax(0,1fr)_150px_150px_110px]"
+      className="group grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 rounded-ws-sm px-3 py-2.5 transition-colors hover:bg-ws-hover md:grid-cols-[auto_minmax(0,1fr)_150px_150px_110px]"
     >
       <PriorityMark priority={task.priority} />
       <div className="min-w-0">
-        <p className={cn('truncate text-[13.5px] text-ws-ink', closed && 'text-ws-ink-3 line-through decoration-ws-line-strong')}>
+        <p className={cn('truncate text-[13.5px] text-ws-ink', closed && 'text-ws-ink-3 line-through')}>
           {task.title}
         </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ws-ink-3">
@@ -41,7 +41,7 @@ export function TaskRow({ task, showProject = true, showVisibility = true }: { t
 
 export function TaskTableHead({ label = 'Tarefa' }: { label?: string }) {
   return (
-    <div className="hidden grid-cols-[auto_minmax(0,1fr)_150px_150px_110px] gap-x-3 border-b border-ws-line bg-ws-sunken px-4 py-1.5 md:grid">
+    <div className="mb-1 hidden grid-cols-[auto_minmax(0,1fr)_150px_150px_110px] gap-x-3 rounded-ws-sm bg-ws-sunken px-3 py-1.5 md:grid">
       <span className="ws-eyebrow w-3.5" />
       <span className="ws-eyebrow">{label}</span>
       <span className="ws-eyebrow">Status</span>

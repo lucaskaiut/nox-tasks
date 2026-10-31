@@ -59,12 +59,12 @@ export default function ClientsPage() {
         <ErrorBlock message="Não foi possível carregar os clientes." />
       ) : clients.data?.data.length ? (
         <>
-          <div className="overflow-hidden rounded-ws border border-ws-line bg-ws-panel">
+          <div className="rounded-ws bg-ws-panel p-1.5 shadow-ws">
             {clients.data.data.map((client) => (
               <Link
                 key={client.id}
                 to={`/w/clients/${client.id}`}
-                className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-ws-line px-4 py-3 last:border-b-0 hover:bg-ws-hover md:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_90px_90px_80px]"
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-ws-sm px-3 py-3 hover:bg-ws-hover md:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_90px_90px_80px]"
               >
                 <Initials name={client.name} size="md" />
                 <div className="min-w-0">
@@ -72,8 +72,8 @@ export default function ClientsPage() {
                   <p className="truncate text-[12px] text-ws-ink-3 md:hidden">{client.email}</p>
                 </div>
                 <p className="hidden truncate text-[12.5px] text-ws-ink-2 md:block">{client.email}</p>
-                <span className="hidden font-ws-mono text-[12px] text-ws-ink-2 md:block">{client.projects_count} proj.</span>
-                <span className="hidden font-ws-mono text-[12px] text-ws-ink-2 md:block">{client.users_count} acesso(s)</span>
+                <span className="hidden tabular-nums text-[12px] text-ws-ink-2 md:block">{client.projects_count} proj.</span>
+                <span className="hidden tabular-nums text-[12px] text-ws-ink-2 md:block">{client.users_count} acesso(s)</span>
                 <Pill tone={client.status === 'active' ? 'ok' : 'neutral'}>{client.status_label}</Pill>
               </Link>
             ))}
@@ -165,7 +165,7 @@ export function ClientPage() {
                 <Phone className="size-3.5" /> {c.phone}
               </span>
             )}
-            {c.document && <span className="font-ws-mono">{formatDocument(c.document)}</span>}
+            {c.document && <span className="tabular-nums">{formatDocument(c.document)}</span>}
           </>
         }
         actions={
@@ -185,10 +185,10 @@ export function ClientPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Panel eyebrow="Portfólio" title="Projetos" bodyClassName="p-0">
+        <Panel eyebrow="Portfólio" title="Projetos" bodyClassName="p-1.5 pt-0">
           {projects.data?.data.length ? (
             projects.data.data.map((project) => (
-              <Link key={project.id} to={`/w/projects/${project.id}`} className="flex items-center gap-3 border-b border-ws-line px-4 py-3 last:border-b-0 hover:bg-ws-hover">
+              <Link key={project.id} to={`/w/projects/${project.id}`} className="flex items-center gap-3 rounded-ws-sm px-3 py-3 hover:bg-ws-hover">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] text-ws-ink">{project.name}</p>
                   <p className="text-[12px] text-ws-ink-3">
@@ -196,7 +196,7 @@ export function ClientPage() {
                   </p>
                 </div>
                 {project.is_archived && <Pill>Arquivado</Pill>}
-                <span className="font-ws-mono text-[12px] text-ws-ink-2">{project.progress?.percent ?? 0}%</span>
+                <span className="tabular-nums text-[12px] text-ws-ink-2">{project.progress?.percent ?? 0}%</span>
               </Link>
             ))
           ) : (

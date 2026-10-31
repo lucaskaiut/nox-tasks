@@ -56,10 +56,10 @@ function Brand() {
 
   return (
     <Link to="/w" className="flex shrink-0 items-center gap-2.5">
-      <span className="flex size-7 items-center justify-center rounded-ws bg-ws-ink font-ws-mono text-[13px] font-medium text-ws-canvas">n/</span>
+      <span className="flex size-8 items-center justify-center rounded-ws bg-ws-ink tabular-nums text-[13px] font-medium text-ws-canvas">n/</span>
       <span className="hidden leading-tight sm:block">
         <span className="block text-[13px] font-semibold text-ws-ink">{client?.name ?? activeName ?? 'Workspace'}</span>
-        <span className="block font-ws-mono text-[10.5px] tracking-wide text-ws-ink-3 uppercase">{client ? 'área do cliente' : 'nox tasks'}</span>
+        <span className="block tabular-nums text-[10.5px] tracking-wide text-ws-ink-3 uppercase">{client ? 'área do cliente' : 'nox tasks'}</span>
       </span>
     </Link>
   )
@@ -74,12 +74,12 @@ function NotificationsBell() {
       to="/w/notifications"
       aria-label={count ? `Notificações (${count} não lidas)` : 'Notificações'}
       className={({ isActive }) =>
-        cn('relative inline-flex size-8 items-center justify-center rounded-ws text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink', isActive && 'bg-ws-hover text-ws-ink')
+        cn('relative inline-flex size-8 items-center justify-center rounded-ws-sm text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink', isActive && 'bg-ws-hover text-ws-ink')
       }
     >
       <Bell className="size-4" />
       {count > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 min-w-4 rounded-[2px] bg-ws-danger px-1 text-center font-ws-mono text-[10px] leading-4 font-medium text-white">
+        <span className="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-ws-danger px-1 text-center tabular-nums text-[10px] leading-4 font-medium text-white">
           {count > 99 ? '99+' : count}
         </span>
       )}
@@ -97,7 +97,7 @@ function ThemeSwitch() {
       type="button"
       onClick={() => setTheme(dark ? 'light' : 'dark')}
       aria-label={dark ? 'Usar tema claro' : 'Usar tema escuro'}
-      className="inline-flex size-8 items-center justify-center rounded-ws text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink"
+      className="inline-flex size-8 items-center justify-center rounded-ws-sm text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink"
     >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>
@@ -113,14 +113,14 @@ function UserMenu() {
   return (
     <Menu
       trigger={({ toggle }) => (
-        <button type="button" onClick={toggle} aria-label="Menu da conta" className="rounded-ws p-0.5 hover:bg-ws-hover">
+        <button type="button" onClick={toggle} aria-label="Menu da conta" className="rounded-ws-sm p-0.5 hover:bg-ws-hover">
           <Initials name={user?.name} size="md" />
         </button>
       )}
     >
       {(close) => (
         <>
-          <div className="border-b border-ws-line px-3 pt-1.5 pb-2.5">
+          <div className="mb-1 rounded-ws-sm bg-ws-sunken px-2.5 py-2">
             <p className="truncate text-[13px] font-medium text-ws-ink">{user?.name}</p>
             <p className="truncate text-[12px] text-ws-ink-3">{user?.email}</p>
           </div>
@@ -160,10 +160,10 @@ export function WorkspaceLayout() {
 
   return (
     <div className="ws min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-ws-line bg-ws-canvas/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 bg-ws-panel/95 shadow-ws-sm backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-6 px-4 md:px-6">
           <Brand />
-          <nav aria-label="Principal" className="hidden h-full items-stretch gap-1 md:flex">
+          <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
             {navigation.map((entry) => (
               <NavLink
                 key={entry.to}
@@ -171,8 +171,8 @@ export function WorkspaceLayout() {
                 end={entry.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center border-b-2 px-2.5 text-[13px] transition-colors',
-                    isActive ? 'border-ws-accent font-medium text-ws-ink' : 'border-transparent text-ws-ink-2 hover:text-ws-ink',
+                    'flex h-8 items-center rounded-ws-sm px-3 text-[13px] transition-colors',
+                    isActive ? 'bg-ws-accent-tint font-medium text-ws-accent' : 'text-ws-ink-2 hover:bg-ws-hover hover:text-ws-ink',
                   )
                 }
               >
@@ -194,7 +194,7 @@ export function WorkspaceLayout() {
         </Suspense>
       </main>
 
-      <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-ws-line bg-ws-panel md:hidden">
+      <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-30 flex bg-ws-panel shadow-ws-up md:hidden">
         {navigation.slice(0, 5).map((entry) => (
           <NavLink
             key={entry.to}

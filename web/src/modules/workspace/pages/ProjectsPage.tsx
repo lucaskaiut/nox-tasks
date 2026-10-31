@@ -18,7 +18,7 @@ function ProjectLine({ project }: { project: Project }) {
   return (
     <Link
       to={`/w/projects/${project.id}`}
-      className="grid grid-cols-1 gap-3 border-b border-ws-line px-4 py-3.5 last:border-b-0 hover:bg-ws-hover md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_180px_110px_90px] md:items-center"
+      className="grid grid-cols-1 gap-3 rounded-ws-sm px-3 py-3.5 hover:bg-ws-hover md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_180px_110px_90px] md:items-center"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -33,7 +33,7 @@ function ProjectLine({ project }: { project: Project }) {
       </div>
       <div className="flex items-center gap-2">
         <Bar value={progress?.percent ?? 0} className="flex-1" />
-        <span className="w-16 text-right font-ws-mono text-[11.5px] text-ws-ink-2 tabular-nums">
+        <span className="w-16 text-right tabular-nums text-[11.5px] text-ws-ink-2">
           {progress?.done ?? 0}/{(progress?.total ?? 0) - (progress?.cancelled ?? 0)}
         </span>
       </div>
@@ -42,7 +42,7 @@ function ProjectLine({ project }: { project: Project }) {
           <Initials key={member.id} name={member.name} size="xs" className="bg-ws-panel" />
         ))}
       </div>
-      <span className="font-ws-mono text-[12px] text-ws-ink-2 md:text-right">{shortDate(project.due_at)}</span>
+      <span className="tabular-nums text-[12px] text-ws-ink-2 md:text-right">{shortDate(project.due_at)}</span>
     </Link>
   )
 }
@@ -139,8 +139,8 @@ export default function ProjectsPage() {
         <ErrorBlock message="Não foi possível carregar os projetos." onRetry={() => projects.refetch()} />
       ) : projects.data?.data.length ? (
         <>
-          <div className="overflow-hidden rounded-ws border border-ws-line bg-ws-panel">
-            <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_180px_110px_90px] gap-3 border-b border-ws-line bg-ws-sunken px-4 py-1.5 md:grid">
+          <div className="rounded-ws bg-ws-panel p-1.5 shadow-ws">
+            <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_180px_110px_90px] gap-3 bg-ws-sunken px-4 py-1.5 md:grid">
               <span className="ws-eyebrow">Projeto</span>
               <span className="ws-eyebrow">Status</span>
               <span className="ws-eyebrow">Conclusão</span>

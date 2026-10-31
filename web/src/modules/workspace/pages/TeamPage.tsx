@@ -40,14 +40,14 @@ export default function TeamPage() {
             const stats = counts.get(member.id)
 
             return (
-              <li key={member.id} className="flex items-center gap-3 rounded-ws border border-ws-line bg-ws-panel p-3">
+              <li key={member.id} className="flex items-center gap-3 rounded-ws bg-ws-panel shadow-ws p-3">
                 <Initials name={member.name} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-medium text-ws-ink">{member.name}</p>
                   <p className="truncate text-[12px] text-ws-ink-3">{member.email}</p>
                 </div>
                 <Link to={`/w/tasks?assignee=${member.id}`} className="text-right" title="Ver tarefas abertas">
-                  <span className="block font-ws-mono text-[18px] leading-none text-ws-ink">{stats?.open ?? 0}</span>
+                  <span className="block tabular-nums text-[18px] leading-none text-ws-ink">{stats?.open ?? 0}</span>
                   <span className="text-[11px] text-ws-ink-3">{stats?.overdue ? <span className="text-ws-danger">{stats.overdue} atrasada(s)</span> : 'abertas'}</span>
                 </Link>
               </li>

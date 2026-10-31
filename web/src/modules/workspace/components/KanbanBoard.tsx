@@ -174,16 +174,16 @@ function Lane({
     <section
       aria-label={`Coluna ${column.name}`}
       className={cn(
-        'flex w-[84vw] shrink-0 snap-start flex-col rounded-ws border border-ws-line bg-ws-sunken/60 sm:w-[300px]',
-        isOver && 'border-ws-accent',
+        'flex w-[84vw] shrink-0 snap-start flex-col rounded-ws-lg bg-ws-hover/70 transition-colors sm:w-[300px]',
+        isOver && 'bg-ws-accent-tint',
       )}
     >
-      <header className="flex items-center gap-2 border-b border-ws-line px-3 py-2" style={{ borderTop: `2px solid ${column.color}` }}>
+      <header className="flex items-center gap-2 px-3 pt-3 pb-1">
         <Dot color={column.color} />
         <h3 className="flex-1 truncate text-[12.5px] font-semibold tracking-wide text-ws-ink uppercase" title={`${column.name} · ${column.kind_label}`}>
           {column.name}
         </h3>
-        <span className="font-ws-mono text-[11px] text-ws-ink-3">{ids.length}</span>
+        <span className="tabular-nums text-[11px] text-ws-ink-3">{ids.length}</span>
         {onAdd && !closed && (
           <IconButton label={`Nova tarefa em ${column.name}`} className="size-6" onClick={() => onAdd(column.id)}>
             <Plus className="size-3.5" />
@@ -230,8 +230,8 @@ function Card({ task, dragging }: { task: Task; dragging?: boolean }) {
       tabIndex={-1}
       onClick={() => !dragging && navigate(`/w/tasks/${task.id}`)}
       className={cn(
-        'cursor-pointer rounded-ws border border-ws-line bg-ws-panel p-2.5 text-left transition-colors hover:border-ws-line-strong',
-        dragging && 'rotate-[1.5deg] cursor-grabbing border-ws-accent',
+        'cursor-pointer rounded-ws bg-ws-panel p-3 text-left shadow-ws-sm transition-shadow hover:shadow-ws',
+        dragging && 'rotate-[1.5deg] cursor-grabbing shadow-ws-pop',
       )}
     >
       <div className="flex items-start gap-2">

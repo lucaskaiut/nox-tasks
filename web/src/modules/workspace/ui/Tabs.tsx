@@ -3,7 +3,7 @@ import { cn } from '@/shared/utils/cn'
 
 export function TabLinks({ tabs }: { tabs: Array<{ to: string; label: string; end?: boolean; count?: number }> }) {
   return (
-    <nav className="ws-scroll-x -mb-px flex gap-5 overflow-x-auto border-b border-ws-line" aria-label="Seções">
+    <nav className="ws-scroll-x inline-flex max-w-full gap-1 overflow-x-auto rounded-ws bg-ws-hover p-1" aria-label="Seções">
       {tabs.map((tab) => (
         <NavLink
           key={tab.to}
@@ -11,13 +11,13 @@ export function TabLinks({ tabs }: { tabs: Array<{ to: string; label: string; en
           end={tab.end}
           className={({ isActive }) =>
             cn(
-              'flex h-10 shrink-0 items-center gap-1.5 border-b-2 text-[13px] transition-colors',
-              isActive ? 'border-ws-ink font-medium text-ws-ink' : 'border-transparent text-ws-ink-2 hover:text-ws-ink',
+              'flex h-8 shrink-0 items-center gap-1.5 rounded-ws-sm px-3 text-[13px] transition-colors',
+              isActive ? 'bg-ws-panel font-medium text-ws-ink shadow-ws-xs' : 'text-ws-ink-2 hover:text-ws-ink',
             )
           }
         >
           {tab.label}
-          {tab.count !== undefined && <span className="font-ws-mono text-[11px] text-ws-ink-3">{tab.count}</span>}
+          {tab.count !== undefined && <span className="tabular-nums text-[11px] text-ws-ink-3">{tab.count}</span>}
         </NavLink>
       ))}
     </nav>

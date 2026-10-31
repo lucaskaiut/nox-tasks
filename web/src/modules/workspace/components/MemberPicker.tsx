@@ -45,7 +45,7 @@ export function MemberPicker({
           id={id}
           type="button"
           onClick={open}
-          className="flex h-9 w-full items-center gap-2 rounded-ws border border-ws-line-strong bg-ws-panel px-2.5 text-left text-[13.5px] hover:border-ws-ink-3"
+          className="flex h-9 w-full items-center gap-2 rounded-ws-sm bg-ws-panel px-2.5 text-left text-[13.5px] shadow-ws-xs transition-shadow hover:shadow-ws-sm"
         >
           {selected.length === 0 ? (
             <span className="flex-1 text-ws-ink-3">{placeholder}</span>
@@ -78,7 +78,7 @@ export function MemberPicker({
                   key={member.id}
                   type="button"
                   onClick={() => toggle(member.id, close)}
-                  className={cn('flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-ws-hover', active && 'text-ws-accent')}
+                  className={cn('flex w-full items-center gap-2 rounded-ws-sm px-2.5 py-1.5 text-left text-[13px] hover:bg-ws-hover', active && 'text-ws-accent')}
                 >
                   <Initials name={member.name} size="xs" />
                   <span className="flex-1 truncate">{member.name}</span>

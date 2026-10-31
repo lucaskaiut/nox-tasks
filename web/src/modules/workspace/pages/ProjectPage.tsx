@@ -53,7 +53,7 @@ export default function ProjectPage() {
             {p.progress && (
               <span className="inline-flex items-center gap-2">
                 <Bar value={p.progress.percent} className="w-24" />
-                <span className="font-ws-mono tabular-nums">{p.progress.percent}%</span>
+                <span className="tabular-nums">{p.progress.percent}%</span>
               </span>
             )}
           </>
@@ -131,7 +131,7 @@ export function ProjectOverview() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <Panel eyebrow="Próximas entregas" title="Tarefas em aberto" bodyClassName="p-0">
+      <Panel eyebrow="Próximas entregas" title="Tarefas em aberto" bodyClassName="p-1.5 pt-0">
         <TaskTableHead />
         {tasks.data?.data.length ? (
           tasks.data.data.map((task) => <TaskRow key={task.id} task={task} showProject={false} showVisibility={!isClient} />)
@@ -141,24 +141,24 @@ export function ProjectOverview() {
       </Panel>
       <div className="flex flex-col gap-6">
         <Panel eyebrow="Indicadores" title="Conclusão">
-          <p className="font-ws-mono text-[36px] leading-none text-ws-ink tabular-nums">{progress?.percent ?? 0}%</p>
+          <p className="tabular-nums text-[36px] leading-none text-ws-ink">{progress?.percent ?? 0}%</p>
           <Bar value={progress?.percent ?? 0} className="mt-3" />
           <dl className="mt-4 grid grid-cols-2 gap-3 text-[12.5px]">
             <div>
               <dt className="text-ws-ink-3">Concluídas</dt>
-              <dd className="font-ws-mono text-ws-ink">{progress?.done ?? 0}</dd>
+              <dd className="tabular-nums text-ws-ink">{progress?.done ?? 0}</dd>
             </div>
             <div>
               <dt className="text-ws-ink-3">Em aberto</dt>
-              <dd className="font-ws-mono text-ws-ink">{progress?.open ?? 0}</dd>
+              <dd className="tabular-nums text-ws-ink">{progress?.open ?? 0}</dd>
             </div>
             <div>
               <dt className="text-ws-ink-3">Atrasadas</dt>
-              <dd className="font-ws-mono text-ws-danger">{progress?.overdue ?? 0}</dd>
+              <dd className="tabular-nums text-ws-danger">{progress?.overdue ?? 0}</dd>
             </div>
             <div>
               <dt className="text-ws-ink-3">Canceladas</dt>
-              <dd className="font-ws-mono text-ws-ink">{progress?.cancelled ?? 0}</dd>
+              <dd className="tabular-nums text-ws-ink">{progress?.cancelled ?? 0}</dd>
             </div>
           </dl>
         </Panel>
@@ -226,7 +226,7 @@ export function ProjectTasks() {
   if (tasks.isLoading) return <LoadingBlock />
 
   return (
-    <div className="overflow-hidden rounded-ws border border-ws-line bg-ws-panel">
+    <div className="rounded-ws bg-ws-panel p-1.5 shadow-ws">
       <TaskTableHead />
       {tasks.data?.data.length ? (
         tasks.data.data.map((task) => <TaskRow key={task.id} task={task} showProject={false} showVisibility={!isClient} />)

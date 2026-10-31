@@ -69,8 +69,8 @@ export default function TasksPage() {
             type="button"
             onClick={item.apply}
             className={cn(
-              'h-7 rounded-ws border px-2.5 text-[12.5px]',
-              item.active ? 'border-ws-ink bg-ws-ink text-ws-canvas' : 'border-ws-line-strong text-ws-ink-2 hover:text-ws-ink',
+              'h-7 rounded-full px-3 text-[12.5px] transition-colors',
+              item.active ? 'bg-ws-ink text-ws-canvas shadow-ws-sm' : 'bg-ws-panel text-ws-ink-2 shadow-ws-xs hover:text-ws-ink',
             )}
           >
             {item.label}
@@ -143,7 +143,7 @@ export default function TasksPage() {
         <ErrorBlock message="Não foi possível carregar as tarefas." onRetry={() => tasks.refetch()} />
       ) : tasks.data?.data.length ? (
         <>
-          <div className="overflow-hidden rounded-ws border border-ws-line bg-ws-panel">
+          <div className="rounded-ws bg-ws-panel p-1.5 shadow-ws">
             <TaskTableHead />
             {tasks.data.data.map((task) => (
               <TaskRow key={task.id} task={task} showVisibility={!isClient} />
