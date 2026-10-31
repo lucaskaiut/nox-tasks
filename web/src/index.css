@@ -256,15 +256,15 @@ body {
 
 .dark .ws,
 .ws.dark {
-  --ws-canvas: #0e0f0d;
-  --ws-panel: #1b1c19;
-  --ws-sunken: #232420;
-  --ws-hover: #2a2b26;
-  --ws-line: #2a2b26;
-  --ws-line-strong: #3b3c35;
-  --ws-ink: #ecebe5;
-  --ws-ink-2: #a8a69c;
-  --ws-ink-3: #77756c;
+  --ws-canvas: #0b0f17;
+  --ws-panel: #141a26;
+  --ws-sunken: #1a2130;
+  --ws-hover: #212a3b;
+  --ws-line: #232c3d;
+  --ws-line-strong: #33405a;
+  --ws-ink: #e6ebf4;
+  --ws-ink-2: #a0aabd;
+  --ws-ink-3: #6d788e;
   --ws-accent: #6cc3a0;
   --ws-accent-hover: #86d1b2;
   --ws-accent-ink: #0d1a14;
