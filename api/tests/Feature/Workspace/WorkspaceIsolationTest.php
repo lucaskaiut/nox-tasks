@@ -332,4 +332,43 @@ class WorkspaceIsolationTest extends TestCase
             ->assertJsonPath('data.assignee.name', $this->professional->name)
             ->assertJsonMissingPath('data.assignee.email');
     }
+
+    public function test_client_only_discovers_tags_of_visible_tasks(): void
+    {
+        Sanctum::actingAs($this->professional);
+        $this->patchJson("/api/tasks/{$this->sharedTaskA->uuid}", ['tags' => ['layout']])->assertOk();
+        $this->patchJson("/api/tasks/{$this->internalTaskA->uuid}", ['tags' => ['margem-baixa']])->assertOk();
+        $this->patchJson("/api/tasks/{$this->sharedTaskB->uuid}", ['tags' => ['cliente-b']])->assertOk();
+
+        Sanctum::actingAs($this->clientUserA);
+
+        $tags = collect($this->getJson('/api/workspace/tags')->assertOk()->json('data'))->pluck('name');
+        $this->assertSame(['layout'], $tags->all());
+    }
+
+    public function test_shared_board_does_not_reveal_other_clients_projects(): void
+    {
+        // Quadro reutilizado por projetos de dois clientes.
+        $this->projectB->forceFill(['board_id' => $this->projectA->board_id])->save();
+
+        Sanctum::actingAs($this->clientUserA);
+
+        $this->getJson("/api/boards/{$this->projectA->board->uuid}")->assertOk()->assertJsonPath('data.projects_count', 1);
+        $this->getJson('/api/boards')->assertOk()->assertJsonPath('data.0.projects_count', 1);
+    }
+
+    public function test_client_change_history_is_internal(): void
+    {
+        Sanctum::actingAs($this->professional);
+
+        $project = $this->postJson('/api/projects', ['name' => 'Sem tarefas', 'client_id' => $this->clientA->uuid])->json('data.id');
+        $this->patchJson("/api/projects/{$project}", ['client_id' => $this->clientB->uuid])->assertOk();
+
+        Sanctum::actingAs($this->clientUserB);
+
+        $this->getJson("/api/projects/{$project}/activity")
+            ->assertOk()
+            ->assertJsonMissing(['to' => 'Cliente B'])
+            ->assertDontSee('Cliente A');
+    }
 }

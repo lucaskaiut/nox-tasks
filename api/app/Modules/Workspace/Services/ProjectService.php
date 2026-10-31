@@ -20,8 +20,11 @@ class ProjectService
 {
     private const FIELDS = ['name', 'description', 'status', 'starts_at', 'due_at', 'internal_notes'];
 
-    /** Campos cujo histórico nunca é exibido a clientes. */
-    private const INTERNAL_FIELDS = ['internal_notes'];
+    /**
+     * Campos cujo histórico nunca é exibido a clientes. "client" é interno para
+     * não revelar a um cliente o nome do cliente anterior do projeto.
+     */
+    private const INTERNAL_FIELDS = ['internal_notes', 'client', 'members', 'board'];
 
     public function __construct(
         private readonly BoardService $boards,
@@ -285,7 +288,7 @@ class ProjectService
      */
     private function recordUpdate(Project $project, array $changes): void
     {
-        $internal = Arr::only($changes, [...self::INTERNAL_FIELDS, 'members', 'board']);
+        $internal = Arr::only($changes, self::INTERNAL_FIELDS);
         $shared = Arr::except($changes, array_keys($internal));
 
         if ($shared !== []) {

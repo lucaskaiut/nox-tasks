@@ -37,15 +37,23 @@ class BoardService
         return Board::query()
             ->visibleTo($actor)
             ->with('columns')
-            ->withCount('projects')
+            ->withCount(['projects' => fn (Builder $q) => $q->visibleTo($actor)])
             ->when(filled($search), fn (Builder $q) => $q->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate(min(max($perPage, 1), 100));
     }
 
-    public function load(Board $board): Board
+    /**
+     * A contagem de projetos respeita o escopo do usuário: um quadro pode ser
+     * usado por projetos de clientes diferentes.
+     */
+    public function load(Board $board, ?User $actor = null): Board
     {
-        return $board->load('columns')->loadCount('projects');
+        $actor ??= auth()->user();
+
+        return $board->load('columns')->loadCount([
+            'projects' => fn (Builder $q) => $actor instanceof User ? $q->visibleTo($actor) : $q,
+        ]);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Modules\Workspace\Http\Resources\TaskResource;
 use App\Modules\Workspace\Models\Tag;
 use App\Modules\Workspace\Services\DashboardService;
 use App\Modules\Workspace\Services\MemberService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,8 +38,20 @@ class WorkspaceController extends ApiController
         )));
     }
 
-    public function tags(): JsonResponse
+    /**
+     * Tags em uso nas tarefas visíveis ao usuário (clientes não descobrem tags
+     * de tarefas internas ou de outros clientes).
+     */
+    public function tags(Request $request): JsonResponse
     {
-        return $this->success(Tag::query()->orderBy('name')->limit(200)->get(['name', 'color']));
+        $user = $request->user();
+
+        return $this->success(
+            Tag::query()
+                ->when($user->isClientUser(), fn (Builder $q) => $q->whereHas('tasks', fn (Builder $t) => $t->visibleTo($user)))
+                ->orderBy('name')
+                ->limit(200)
+                ->get(['name', 'color']),
+        );
     }
 }
