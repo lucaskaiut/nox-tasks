@@ -209,3 +209,161 @@ body {
 .animate-blink {
   animation: blink 1s step-end infinite;
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Workspace — identidade visual própria (projetos, tarefas, Kanban).
+ * Escopo: elementos dentro de `.ws`. Não compartilha tokens com o painel
+ * administrativo: papel/tinta, um único acento, cantos de 3px, linhas finas,
+ * sem sombras decorativas, tipografia IBM Plex.
+ * ---------------------------------------------------------------------------
+ */
+.ws {
+  --ws-canvas: #f4f3ef;
+  --ws-panel: #fdfdfb;
+  --ws-sunken: #ebe9e3;
+  --ws-hover: #e9e7e0;
+  --ws-line: #e0ddd5;
+  --ws-line-strong: #c9c5ba;
+  --ws-ink: #1b1a17;
+  --ws-ink-2: #5d5a52;
+  --ws-ink-3: #8d897e;
+  --ws-accent: #1d5c4a;
+  --ws-accent-hover: #164a3b;
+  --ws-accent-ink: #f4f3ef;
+  --ws-accent-tint: #dfeae4;
+  --ws-danger: #b42318;
+  --ws-danger-tint: #f8e3e0;
+  --ws-warn: #a15c07;
+  --ws-warn-tint: #f7ead3;
+  --ws-ok: #1d6b3c;
+  --ws-ok-tint: #dcecdf;
+  --ws-info: #2c5aa0;
+  --ws-info-tint: #e0e8f4;
+  --ws-focus: rgb(29 92 74 / 0.45);
+  --ws-scrim: rgb(27 26 23 / 0.38);
+
+  font-family: var(--font-ws);
+  color: var(--ws-ink);
+  background: var(--ws-canvas);
+  font-feature-settings: 'ss02', 'zero';
+}
+
+.dark .ws,
+.ws.dark {
+  --ws-canvas: #121311;
+  --ws-panel: #191a17;
+  --ws-sunken: #0d0e0c;
+  --ws-hover: #23241f;
+  --ws-line: #2a2b26;
+  --ws-line-strong: #3b3c35;
+  --ws-ink: #ecebe5;
+  --ws-ink-2: #a8a69c;
+  --ws-ink-3: #77756c;
+  --ws-accent: #6cc3a0;
+  --ws-accent-hover: #86d1b2;
+  --ws-accent-ink: #0d1a14;
+  --ws-accent-tint: rgb(108 195 160 / 0.14);
+  --ws-danger: #f0776b;
+  --ws-danger-tint: rgb(240 119 107 / 0.14);
+  --ws-warn: #e7a94b;
+  --ws-warn-tint: rgb(231 169 75 / 0.14);
+  --ws-ok: #78c894;
+  --ws-ok-tint: rgb(120 200 148 / 0.14);
+  --ws-info: #86a9e0;
+  --ws-info-tint: rgb(134 169 224 / 0.14);
+  --ws-focus: rgb(108 195 160 / 0.5);
+  --ws-scrim: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-ws: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-ws-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --color-ws-canvas: var(--ws-canvas);
+  --color-ws-panel: var(--ws-panel);
+  --color-ws-sunken: var(--ws-sunken);
+  --color-ws-hover: var(--ws-hover);
+  --color-ws-line: var(--ws-line);
+  --color-ws-line-strong: var(--ws-line-strong);
+  --color-ws-ink: var(--ws-ink);
+  --color-ws-ink-2: var(--ws-ink-2);
+  --color-ws-ink-3: var(--ws-ink-3);
+  --color-ws-accent: var(--ws-accent);
+  --color-ws-accent-hover: var(--ws-accent-hover);
+  --color-ws-accent-ink: var(--ws-accent-ink);
+  --color-ws-accent-tint: var(--ws-accent-tint);
+  --color-ws-danger: var(--ws-danger);
+  --color-ws-danger-tint: var(--ws-danger-tint);
+  --color-ws-warn: var(--ws-warn);
+  --color-ws-warn-tint: var(--ws-warn-tint);
+  --color-ws-ok: var(--ws-ok);
+  --color-ws-ok-tint: var(--ws-ok-tint);
+  --color-ws-info: var(--ws-info);
+  --color-ws-info-tint: var(--ws-info-tint);
+  --color-ws-scrim: var(--ws-scrim);
+
+  --radius-ws: 3px;
+}
+
+.ws *:focus-visible {
+  outline: 2px solid var(--ws-focus);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+.ws ::selection {
+  background: var(--ws-accent);
+  color: var(--ws-accent-ink);
+}
+
+/* Rótulos "eyebrow" em caixa alta monoespaçada */
+.ws-eyebrow {
+  font-family: var(--font-ws-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ws-ink-3);
+}
+
+.ws-scroll-x {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ws-line-strong) transparent;
+}
+
+@keyframes ws-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ws-slide-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.ws-rise {
+  animation: ws-rise 0.16s ease-out;
+}
+
+.ws-slide-in {
+  animation: ws-slide-in 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-rise,
+  .ws-slide-in {
+    animation: none;
+  }
+}

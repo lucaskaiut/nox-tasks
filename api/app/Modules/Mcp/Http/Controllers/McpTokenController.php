@@ -18,7 +18,7 @@ class McpTokenController extends ApiController
     public function index(Request $request): JsonResponse
     {
         return $this->success([
-            'server_url' => url('/mcp/workspace'),
+            'server_url' => $this->serverUrl(),
             'tokens' => $this->service->list($request->user())->map(fn (PersonalAccessToken $token) => [
                 'id' => $token->getKey(),
                 'name' => substr($token->name, strlen(McpTokenService::PREFIX)),
@@ -42,9 +42,17 @@ class McpTokenController extends ApiController
             'id' => $token->accessToken->getKey(),
             'name' => $data['name'],
             'token' => $token->plainTextToken,
-            'server_url' => url('/mcp/workspace'),
+            'server_url' => $this->serverUrl(),
             'expires_at' => $token->accessToken->expires_at?->toIso8601String(),
         ], 'Token MCP criado. Copie-o agora: ele não será exibido novamente.');
+    }
+
+    /**
+     * URL pública do servidor (APP_URL), independente do host que serviu esta requisição.
+     */
+    private function serverUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/mcp/workspace';
     }
 
     public function destroy(Request $request, int $token): JsonResponse

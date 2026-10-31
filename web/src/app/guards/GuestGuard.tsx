@@ -10,7 +10,7 @@ export function GuestGuard() {
 
   if (status === 'loading') return <FullScreenLoading />
 
-  if (status === 'authenticated') return <Navigate to="/dashboard" replace />
+  if (status === 'authenticated') return <Navigate to="/w" replace />
 
   return <Outlet />
 }

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
-import { Outlet } from 'react-router'
-import { Building2, CreditCard, LayoutDashboard, KeyRound, LogOut, Menu, Receipt, ScrollText, ShieldCheck, Sparkles, Users, Webhook, Zap } from 'lucide-react'
+import { Navigate, Outlet } from 'react-router'
+import { Building2, CreditCard, FolderKanban, LayoutDashboard, KeyRound, LogOut, Menu, Receipt, ScrollText, ShieldCheck, Sparkles, Users, Webhook, Zap } from 'lucide-react'
 import { TenantSelector } from '@/modules/auth/components/TenantSelector'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useTenantContextStore } from '@/shared/stores/tenant.store'
@@ -62,6 +62,7 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Sidebar header={<Brand />}>
       <SidebarGroup label="Geral">
+        <SidebarItem to="/w" icon={FolderKanban} label="Workspace" onNavigate={onNavigate} />
         <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" onNavigate={onNavigate} />
         {can(Permission.ASSISTANT_VIEW) && (
           <SidebarItem to="/assistant" icon={Sparkles} label="Assistente de IA" onNavigate={onNavigate} />
@@ -152,9 +153,13 @@ function UserMenu() {
 
 export function AppLayout() {
   const { can } = usePermissions()
+  const isClientUser = useSessionStore((state) => Boolean(state.user?.client))
   const sidebarOpen = useUiStore((state) => state.sidebarOpen)
   const closeSidebar = useUiStore((state) => state.closeSidebar)
   const openSidebar = useUiStore((state) => state.openSidebar)
+
+  // Usuários de cliente usam apenas a área do cliente no Workspace.
+  if (isClientUser) return <Navigate to="/w" replace />
 
   return (
     <div className="flex h-dvh overflow-hidden">

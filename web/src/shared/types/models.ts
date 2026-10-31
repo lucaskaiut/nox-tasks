@@ -15,6 +15,8 @@ export interface User {
   document: string | null
   is_master: boolean
   roles?: Role[]
+  /** Vínculo com um cliente do Workspace (usuário do tipo cliente). */
+  client?: { id: string; name: string } | null
   created_at: string | null
   updated_at: string | null
 }

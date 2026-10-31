@@ -7,6 +7,8 @@ import { AppLayout } from '@/app/layouts/AppLayout'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { Permission } from '@/shared/constants/permissions'
 import { NotFoundPage } from './NotFoundPage'
+import { WorkspaceLayout } from '@/modules/workspace/layout/WorkspaceLayout'
+import { WsGuard } from '@/modules/workspace/layout/WsGuard'
 
 const LoginPage = lazy(() => import('@/modules/auth/pages/LoginPage'))
 const RegisterPage = lazy(() => import('@/modules/auth/pages/RegisterPage'))
@@ -33,6 +35,23 @@ const AssistantPage = lazy(() => import('@/modules/assistant/pages/AssistantPage
 const TenantsListPage = lazy(() => import('@/modules/tenants/pages/TenantsListPage'))
 const TenantCreatePage = lazy(() => import('@/modules/tenants/pages/TenantCreatePage'))
 
+const WsDashboardPage = lazy(() => import('@/modules/workspace/pages/DashboardPage'))
+const WsProjectsPage = lazy(() => import('@/modules/workspace/pages/ProjectsPage'))
+const WsProjectPage = lazy(() => import('@/modules/workspace/pages/ProjectPage'))
+const WsProjectOverview = lazy(() => import('@/modules/workspace/pages/ProjectPage').then((m) => ({ default: m.ProjectOverview })))
+const WsProjectBoard = lazy(() => import('@/modules/workspace/pages/ProjectPage').then((m) => ({ default: m.ProjectBoard })))
+const WsProjectTasks = lazy(() => import('@/modules/workspace/pages/ProjectPage').then((m) => ({ default: m.ProjectTasks })))
+const WsProjectActivity = lazy(() => import('@/modules/workspace/pages/ProjectPage').then((m) => ({ default: m.ProjectActivity })))
+const WsTasksPage = lazy(() => import('@/modules/workspace/pages/TasksPage'))
+const WsTaskPage = lazy(() => import('@/modules/workspace/pages/TaskPage'))
+const WsBoardsPage = lazy(() => import('@/modules/workspace/pages/BoardsPage'))
+const WsBoardPage = lazy(() => import('@/modules/workspace/pages/BoardsPage').then((m) => ({ default: m.BoardPage })))
+const WsClientsPage = lazy(() => import('@/modules/workspace/pages/ClientsPage'))
+const WsClientPage = lazy(() => import('@/modules/workspace/pages/ClientsPage').then((m) => ({ default: m.ClientPage })))
+const WsTeamPage = lazy(() => import('@/modules/workspace/pages/TeamPage'))
+const WsNotificationsPage = lazy(() => import('@/modules/workspace/pages/NotificationsPage'))
+const WsConnectionsPage = lazy(() => import('@/modules/workspace/pages/ConnectionsPage'))
+
 export const router = createBrowserRouter([
   {
     element: <GuestGuard />,
@@ -54,9 +73,36 @@ export const router = createBrowserRouter([
         element: <PaymentPendingPage />,
       },
       {
+        path: '/w',
+        element: <WorkspaceLayout />,
+        children: [
+          { index: true, element: <WsDashboardPage /> },
+          { path: 'projects', element: <WsGuard permission={Permission.PROJECT_READ}><WsProjectsPage /></WsGuard> },
+          {
+            path: 'projects/:id',
+            element: <WsGuard permission={Permission.PROJECT_READ}><WsProjectPage /></WsGuard>,
+            children: [
+              { index: true, element: <WsProjectOverview /> },
+              { path: 'board', element: <WsProjectBoard /> },
+              { path: 'tasks', element: <WsProjectTasks /> },
+              { path: 'activity', element: <WsProjectActivity /> },
+            ],
+          },
+          { path: 'tasks', element: <WsGuard permission={Permission.TASK_READ}><WsTasksPage /></WsGuard> },
+          { path: 'tasks/:id', element: <WsGuard permission={Permission.TASK_READ}><WsTaskPage /></WsGuard> },
+          { path: 'boards', element: <WsGuard permission={Permission.BOARD_MANAGE} professional><WsBoardsPage /></WsGuard> },
+          { path: 'boards/:id', element: <WsGuard permission={Permission.BOARD_MANAGE} professional><WsBoardPage /></WsGuard> },
+          { path: 'clients', element: <WsGuard permission={Permission.CLIENT_READ} professional><WsClientsPage /></WsGuard> },
+          { path: 'clients/:id', element: <WsGuard permission={Permission.CLIENT_READ} professional><WsClientPage /></WsGuard> },
+          { path: 'team', element: <WsGuard permission={Permission.TASK_ASSIGN} professional><WsTeamPage /></WsGuard> },
+          { path: 'notifications', element: <WsNotificationsPage /> },
+          { path: 'connections', element: <WsGuard permission={Permission.MCP_USE}><WsConnectionsPage /></WsGuard> },
+        ],
+      },
+      {
         element: <AppLayout />,
         children: [
-          { path: '/', element: <Navigate to="/dashboard" replace /> },
+          { path: '/', element: <Navigate to="/w" replace /> },
           { path: '/dashboard', element: <DashboardPage /> },
           {
             path: '/users',

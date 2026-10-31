@@ -36,6 +36,26 @@ export const Permission = {
   AUDIT_VIEW: 'audit.view',
 
   ASSISTANT_VIEW: 'assistant.view',
+
+  CLIENT_READ: 'client.read',
+  CLIENT_CREATE: 'client.create',
+  CLIENT_UPDATE: 'client.update',
+  CLIENT_DELETE: 'client.delete',
+  CLIENT_MANAGE_USERS: 'client.manage-users',
+  PROJECT_READ: 'project.read',
+  PROJECT_CREATE: 'project.create',
+  PROJECT_UPDATE: 'project.update',
+  PROJECT_ARCHIVE: 'project.archive',
+  TASK_READ: 'task.read',
+  TASK_CREATE: 'task.create',
+  TASK_UPDATE: 'task.update',
+  TASK_DELETE: 'task.delete',
+  TASK_ASSIGN: 'task.assign',
+  TASK_MOVE: 'task.move',
+  BOARD_READ: 'board.read',
+  BOARD_MANAGE: 'board.manage',
+  COMMENT_CREATE: 'comment.create',
+  MCP_USE: 'mcp.use',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -97,6 +117,40 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
   {
     label: 'Assistente de IA',
     permissions: [{ value: Permission.ASSISTANT_VIEW, label: 'Usar o assistente de IA' }],
+  },
+  {
+    label: 'Workspace — clientes',
+    permissions: [
+      { value: Permission.CLIENT_READ, label: 'Visualizar clientes' },
+      { value: Permission.CLIENT_CREATE, label: 'Cadastrar clientes' },
+      { value: Permission.CLIENT_UPDATE, label: 'Editar clientes' },
+      { value: Permission.CLIENT_DELETE, label: 'Remover clientes' },
+      { value: Permission.CLIENT_MANAGE_USERS, label: 'Gerenciar acessos de clientes' },
+    ],
+  },
+  {
+    label: 'Workspace — projetos e tarefas',
+    permissions: [
+      { value: Permission.PROJECT_READ, label: 'Visualizar projetos' },
+      { value: Permission.PROJECT_CREATE, label: 'Criar projetos' },
+      { value: Permission.PROJECT_UPDATE, label: 'Editar projetos' },
+      { value: Permission.PROJECT_ARCHIVE, label: 'Arquivar projetos' },
+      { value: Permission.TASK_READ, label: 'Visualizar tarefas' },
+      { value: Permission.TASK_CREATE, label: 'Criar tarefas' },
+      { value: Permission.TASK_UPDATE, label: 'Editar tarefas e subtarefas' },
+      { value: Permission.TASK_DELETE, label: 'Excluir tarefas' },
+      { value: Permission.TASK_ASSIGN, label: 'Atribuir responsáveis' },
+      { value: Permission.TASK_MOVE, label: 'Mover tarefas no Kanban' },
+      { value: Permission.COMMENT_CREATE, label: 'Comentar em tarefas' },
+    ],
+  },
+  {
+    label: 'Workspace — quadros e IA',
+    permissions: [
+      { value: Permission.BOARD_READ, label: 'Visualizar quadros' },
+      { value: Permission.BOARD_MANAGE, label: 'Configurar quadros e colunas' },
+      { value: Permission.MCP_USE, label: 'Conectar agentes de IA (MCP)' },
+    ],
   },
   {
     label: 'Assinaturas',

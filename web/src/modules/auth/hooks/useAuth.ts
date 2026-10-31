@@ -13,7 +13,7 @@ function useAuthenticate() {
   return async () => {
     const session = await queryClient.fetchQuery(sessionQueryOptions)
     setSession(session)
-    navigate('/dashboard', { replace: true })
+    navigate('/w', { replace: true })
   }
 }
 
