@@ -19,13 +19,13 @@ import {
 import { isApiError } from '@/shared/api/errors'
 import { applyApiErrorsToForm } from '@/shared/utils/forms'
 import { useCreatePlan } from '../hooks/useBilling'
-import { planSchema, RECURRENCE_UNITS, type PlanFormValues } from '../schemas/plan.schema'
+import { planSchema, RECURRENCE_UNITS, type PlanFormInput, type PlanFormValues } from '../schemas/plan.schema'
 
 export default function PlanCreatePage() {
   const navigate = useNavigate()
   const createPlan = useCreatePlan()
 
-  const form = useForm<PlanFormValues>({
+  const form = useForm<PlanFormInput, unknown, PlanFormValues>({
     resolver: zodResolver(planSchema),
     defaultValues: {
       name: '',

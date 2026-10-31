@@ -4,8 +4,8 @@ import type { ApiError } from '@/shared/api/errors'
 /**
  * Aplica erros de validação (422) da API nos campos do formulário.
  */
-export function applyApiErrorsToForm<T extends FieldValues>(
-  form: UseFormReturn<T>,
+export function applyApiErrorsToForm<T extends FieldValues, TOutput = T>(
+  form: UseFormReturn<T, unknown, TOutput>,
   error: ApiError,
 ): void {
   for (const [field, messages] of Object.entries(error.fieldErrors)) {

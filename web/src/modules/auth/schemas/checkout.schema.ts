@@ -129,7 +129,8 @@ export const creditCardSchema = z
     }
   })
 
-export type CreditCardValues = z.infer<typeof creditCardSchema>
+export type CreditCardInput = z.input<typeof creditCardSchema>
+export type CreditCardValues = z.output<typeof creditCardSchema>
 
 export function toCreditCardPaymentDataFromCard(
   values: CreditCardValues,

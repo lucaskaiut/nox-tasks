@@ -18,14 +18,23 @@ import { Checkbox } from './Checkbox'
 import { Switch } from './Switch'
 import { RadioGroup, type RadioOption } from './RadioGroup'
 
-interface FormProps<T extends FieldValues> {
-  form: UseFormReturn<T>
-  onSubmit: SubmitHandler<T>
+/**
+ * TOutput permite schemas com coerção/defaults (ex.: z.coerce), em que os
+ * valores do formulário (entrada) diferem dos valores validados (saída).
+ */
+interface FormProps<T extends FieldValues, TOutput extends FieldValues = T> {
+  form: UseFormReturn<T, unknown, TOutput>
+  onSubmit: SubmitHandler<TOutput>
   children: ReactNode
   className?: string
 }
 
-export function Form<T extends FieldValues>({ form, onSubmit, children, className }: FormProps<T>) {
+export function Form<T extends FieldValues, TOutput extends FieldValues = T>({
+  form,
+  onSubmit,
+  children,
+  className,
+}: FormProps<T, TOutput>) {
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate className={cn('space-y-5', className)}>

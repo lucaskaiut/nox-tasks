@@ -6,6 +6,7 @@ import { onlyDigits } from '@/shared/utils/document'
 import {
   creditCardSchema,
   toCreditCardPaymentDataFromCard,
+  type CreditCardInput,
   type CreditCardValues,
 } from '../../schemas/checkout.schema'
 
@@ -39,7 +40,7 @@ export function CreditCardPaymentForm({
   loading = false,
   onSubmit,
 }: CreditCardPaymentFormProps) {
-  const form = useForm<CreditCardValues>({
+  const form = useForm<CreditCardInput, unknown, CreditCardValues>({
     resolver: zodResolver(creditCardSchema),
     defaultValues: {
       holder_name: '',
@@ -56,7 +57,8 @@ export function CreditCardPaymentForm({
     mode: 'onBlur',
   })
 
-  const installments = form.watch('installments') || 1
+  // O select entrega string; o schema converte na validação.
+  const installments = Number(form.watch('installments')) || 1
   const installmentValue = Number(amount) / installments
 
   return (

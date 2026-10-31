@@ -10,7 +10,10 @@ export const planSchema = z.object({
   active: z.boolean().default(true),
 })
 
-export type PlanFormValues = z.infer<typeof planSchema>
+/** Valores editados no formulário (antes da coerção). */
+export type PlanFormInput = z.input<typeof planSchema>
+/** Valores validados enviados à API. */
+export type PlanFormValues = z.output<typeof planSchema>
 
 export const RECURRENCE_UNITS = [
   { value: 'days', label: 'Dias' },

@@ -21,7 +21,7 @@ import {
 import { isApiError } from '@/shared/api/errors'
 import { applyApiErrorsToForm } from '@/shared/utils/forms'
 import { usePlanQuery, useUpdatePlan } from '../hooks/useBilling'
-import { planSchema, RECURRENCE_UNITS, type PlanFormValues } from '../schemas/plan.schema'
+import { planSchema, RECURRENCE_UNITS, type PlanFormInput, type PlanFormValues } from '../schemas/plan.schema'
 
 export default function PlanEditPage() {
   const { id = '' } = useParams()
@@ -29,7 +29,7 @@ export default function PlanEditPage() {
   const { data: plan, isLoading } = usePlanQuery(id)
   const updatePlan = useUpdatePlan()
 
-  const form = useForm<PlanFormValues>({
+  const form = useForm<PlanFormInput, unknown, PlanFormValues>({
     resolver: zodResolver(planSchema),
     defaultValues: {
       name: '',
