@@ -10,7 +10,7 @@ import { MemberPicker } from '../components/MemberPicker'
 import { TaskFormSheet } from '../components/TaskForm'
 import { DueMark, PriorityMark, Tags, VisibilityMark } from '../components/TaskBits'
 import { wsKeys } from '../hooks/keys'
-import { useMembers, useProfile, useProject, useTask, useWsMutation } from '../hooks/useWorkspace'
+import { useBoardConfig, useMembers, useProfile, useTask, useWsMutation } from '../hooks/useWorkspace'
 import { dateTime, fileSize, longDate, PRIORITIES, relative } from '../lib/format'
 import type { Subtask, Task } from '../lib/types'
 import { wsApi } from '../services/workspace.api'
@@ -224,7 +224,7 @@ export default function TaskPage() {
   const navigate = useNavigate()
   const task = useTask(id)
   const { isClient, canManage } = useProfile()
-  const project = useProject(task.data?.project?.id ?? '')
+  const board = useBoardConfig()
   const members = useMembers(canManage(Permission.TASK_ASSIGN))
   const activity = useQuery({ queryKey: wsKeys.taskActivity(id), queryFn: () => wsApi.tasks.activity(id, { per_page: 30 }), enabled: Boolean(task.data) })
   const [editing, setEditing] = useState(false)
@@ -240,7 +240,7 @@ export default function TaskPage() {
 
   const t = task.data
   const editable = canManage(Permission.TASK_UPDATE)
-  const columns = project.data?.board?.columns ?? []
+  const columns = board.data?.columns ?? []
 
   return (
     <div className="ws-rise">

@@ -7,7 +7,7 @@ import type { ApiError } from '@/shared/api/errors'
 import { Button, Field, SelectInput, Sheet, TextArea, TextInput } from '../ui'
 import { PROJECT_STATUSES } from '../lib/format'
 import type { Project } from '../lib/types'
-import { useBoards, useClients, useMembers, useWsMutation } from '../hooks/useWorkspace'
+import { useClients, useMembers, useWsMutation } from '../hooks/useWorkspace'
 import { wsApi } from '../services/workspace.api'
 import { MemberPicker } from './MemberPicker'
 import { nullIfEmpty, projectSchema, type ProjectFormValues } from './schemas'
@@ -25,7 +25,6 @@ export function ProjectFormSheet({
 }) {
   const navigate = useNavigate()
   const clients = useClients({ status: 'active', per_page: 100 }, open)
-  const boards = useBoards(open)
   const members = useMembers(open)
   const hasTasks = (project?.progress?.total ?? 0) > 0
 
@@ -39,7 +38,6 @@ export function ProjectFormSheet({
             name: project.name,
             description: project.description ?? '',
             client_id: project.client?.id ?? '',
-            board_id: project.board?.id ?? '',
             status: project.status,
             starts_at: project.starts_at ?? '',
             due_at: project.due_at ?? '',
@@ -64,7 +62,6 @@ export function ProjectFormSheet({
       member_ids: values.member_ids,
     }
     if (!project || !hasTasks) body.client_id = values.client_id
-    if (values.board_id) body.board_id = values.board_id
 
     try {
       if (project) {
@@ -134,20 +131,6 @@ export function ProjectFormSheet({
         <Field label="Conclusão prevista" htmlFor="p-due" error={errors.due_at?.message}>
           <TextInput id="p-due" type="date" {...form.register('due_at')} />
         </Field>
-        <Field
-          label="Quadro Kanban"
-          htmlFor="p-board"
-          hint={project ? 'Ao trocar, as tarefas vão para a coluna equivalente.' : 'Vazio cria um quadro novo para o projeto.'}
-        >
-          <SelectInput id="p-board" {...form.register('board_id')}>
-            {!project && <option value="">Criar quadro padrão</option>}
-            {boards.data?.data.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
         <Field label="Profissionais">
           <Controller
             control={form.control}
@@ -174,7 +157,6 @@ function blank(clientId?: string): ProjectFormValues {
     name: '',
     description: '',
     client_id: clientId ?? '',
-    board_id: '',
     status: 'planning',
     starts_at: '',
     due_at: '',

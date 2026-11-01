@@ -53,12 +53,18 @@ export function KanbanBoard({
   canMove,
   onMove,
   onAdd,
+  showProject = false,
 }: {
   columns: BoardColumn[]
   tasks: Task[]
   canMove: boolean
-  onMove: (taskId: string, columnId: string, position: number) => Promise<unknown>
+  /**
+   * afterId: tarefa logo acima na coluna exibida (null = topo). A ordem é
+   * global por coluna; em visões filtradas o índice exibido não basta.
+   */
+  onMove: (taskId: string, columnId: string, position: number, afterId: string | null) => Promise<unknown>
   onAdd?: (columnId: string) => void
+  showProject?: boolean
 }) {
   const [lanes, setLanes] = useState<Lanes>(() => buildLanes(columns, tasks))
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -121,7 +127,7 @@ export function KanbanBoard({
     if (lane === start.lane && index === start.index) return
 
     try {
-      await onMove(id, lane, index)
+      await onMove(id, lane, index, index > 0 ? next[lane][index - 1] : null)
     } catch {
       setLanes(buildLanes(columns, tasks))
       toast.error('Não foi possível mover a tarefa', 'A alteração foi desfeita.')
@@ -144,11 +150,11 @@ export function KanbanBoard({
     >
       <div className="ws-scroll-x -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:snap-none md:px-0">
         {columns.map((column) => (
-          <Lane key={column.id} column={column} ids={lanes[column.id] ?? []} byId={byId} canMove={canMove} onAdd={onAdd} />
+          <Lane key={column.id} column={column} ids={lanes[column.id] ?? []} byId={byId} canMove={canMove} onAdd={onAdd} showProject={showProject} />
         ))}
       </div>
       <DragOverlay dropAnimation={{ duration: 160, easing: 'ease-out' }}>
-        {active ? <Card task={active} dragging /> : null}
+        {active ? <Card task={active} dragging showProject={showProject} /> : null}
       </DragOverlay>
     </DndContext>
   )
@@ -160,12 +166,14 @@ function Lane({
   byId,
   canMove,
   onAdd,
+  showProject,
 }: {
   column: BoardColumn
   ids: string[]
   byId: Map<string, Task>
   canMove: boolean
   onAdd?: (columnId: string) => void
+  showProject: boolean
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id })
   const closed = column.kind === 'done' || column.kind === 'cancelled'
@@ -195,7 +203,7 @@ function Lane({
           {ids.map((id) => {
             const task = byId.get(id)
 
-            return task ? <SortableCard key={id} task={task} disabled={!canMove} /> : null
+            return task ? <SortableCard key={id} task={task} disabled={!canMove} showProject={showProject} /> : null
           })}
           {ids.length === 0 && <p className="px-1 py-6 text-center text-[12px] text-ws-ink-3">Arraste tarefas para cá</p>}
         </div>
@@ -204,7 +212,7 @@ function Lane({
   )
 }
 
-function SortableCard({ task, disabled }: { task: Task; disabled: boolean }) {
+function SortableCard({ task, disabled, showProject }: { task: Task; disabled: boolean; showProject: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, disabled })
 
   return (
@@ -215,12 +223,12 @@ function SortableCard({ task, disabled }: { task: Task; disabled: boolean }) {
       {...attributes}
       {...listeners}
     >
-      <Card task={task} />
+      <Card task={task} showProject={showProject} />
     </div>
   )
 }
 
-function Card({ task, dragging }: { task: Task; dragging?: boolean }) {
+function Card({ task, dragging, showProject }: { task: Task; dragging?: boolean; showProject?: boolean }) {
   const navigate = useNavigate()
   const closed = task.status?.kind === 'done' || task.status?.kind === 'cancelled'
 
@@ -234,6 +242,11 @@ function Card({ task, dragging }: { task: Task; dragging?: boolean }) {
         dragging && 'rotate-[1.5deg] cursor-grabbing shadow-ws-pop',
       )}
     >
+      {showProject && task.project && (
+        <p className="mb-1.5 truncate text-[11px] font-medium text-ws-ink-3" title={task.project.name}>
+          {task.project.name}
+        </p>
+      )}
       <div className="flex items-start gap-2">
         <PriorityMark priority={task.priority} />
         <p className={cn('flex-1 text-[13px] leading-snug text-ws-ink', closed && 'text-ws-ink-3 line-through')}>{task.title}</p>

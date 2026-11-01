@@ -110,7 +110,7 @@ class TaskService
     public function load(Task $task, User $actor): Task
     {
         $task->load([
-            'project:id,uuid,name,client_id,board_id,archived_at',
+            'project:id,uuid,name,client_id,archived_at',
             'project.client:id,uuid,name',
             'column',
             'assignee:id,uuid,name,email',
@@ -145,13 +145,11 @@ class TaskService
             $task->project()->associate($project);
             $task->created_by = $actor->getKey();
 
-            $column = $this->resolveColumn($project, $data['column_id'] ?? null);
+            $column = $this->resolveColumn($data['column_id'] ?? null);
             $task->board_column_id = $column->getKey();
             $task->completed_at = $column->kind === ColumnKind::DONE ? now() : null;
-            $task->position = (int) Task::query()
-                ->where('board_column_id', $column->getKey())
-                ->where('project_id', $project->getKey())
-                ->max('position') + 1;
+            $last = Task::query()->withTrashed()->where('board_column_id', $column->getKey())->max('position');
+            $task->position = $last === null ? 0 : (int) $last + 1;
 
             if (filled($data['assignee_id'] ?? null)) {
                 $task->assignee_id = $this->members->findProfessional($data['assignee_id'])?->getKey();
@@ -269,39 +267,44 @@ class TaskService
     }
 
     /**
-     * Move a tarefa para uma coluna (do quadro do projeto) e posição.
-     * A posição é relativa às tarefas do mesmo projeto naquela coluna.
+     * Move a tarefa para uma coluna do quadro geral. A ordem é única por
+     * coluna (o quadro reúne tarefas de todos os projetos).
+     *
+     * $afterUuid posiciona a tarefa logo abaixo de outra da mesma coluna —
+     * útil em visões filtradas, em que o índice exibido não corresponde ao
+     * índice global. Sem ele, vale $position (0 = topo; padrão: final).
      *
      * @throws ValidationException
      */
-    public function move(User $actor, Task $task, string $columnUuid, ?int $position = null): Task
+    public function move(User $actor, Task $task, string $columnUuid, ?int $position = null, ?string $afterUuid = null): Task
     {
-        return DB::transaction(function () use ($actor, $task, $columnUuid, $position): Task {
+        return DB::transaction(function () use ($actor, $task, $columnUuid, $position, $afterUuid): Task {
             $task->loadMissing(['project', 'column']);
 
-            $column = BoardColumn::query()
-                ->where('uuid', $columnUuid)
-                ->where('board_id', $task->project->board_id)
-                ->first();
+            $column = $this->boards->current()->columns()->where('uuid', $columnUuid)->first();
 
             if ($column === null) {
                 throw ValidationException::withMessages([
-                    'column_id' => ['A coluna informada não pertence ao quadro deste projeto.'],
+                    'column_id' => ['A coluna informada não pertence ao quadro.'],
                 ]);
             }
 
             $from = $task->column;
 
-            $siblings = Task::query()
+            $siblings = Task::query()->withTrashed()
                 ->where('board_column_id', $column->getKey())
-                ->where('project_id', $task->project_id)
                 ->whereKeyNot($task->getKey())
                 ->orderBy('position')
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->pluck('id')
+                ->pluck('id', 'uuid')
                 ->all();
 
+            if (filled($afterUuid) && array_key_exists($afterUuid, $siblings)) {
+                $position = array_search($afterUuid, array_keys($siblings), true) + 1;
+            }
+
+            $siblings = array_values($siblings);
             $position = max(0, min($position ?? count($siblings), count($siblings)));
             array_splice($siblings, $position, 0, [$task->getKey()]);
 
@@ -418,23 +421,21 @@ class TaskService
         }
     }
 
-    private function resolveColumn(Project $project, ?string $columnUuid): BoardColumn
+    private function resolveColumn(?string $columnUuid): BoardColumn
     {
-        $project->loadMissing('board');
-
         if (filled($columnUuid)) {
-            $column = $project->board->columns()->where('uuid', $columnUuid)->first();
+            $column = $this->boards->current()->columns()->where('uuid', $columnUuid)->first();
 
             if ($column === null) {
                 throw ValidationException::withMessages([
-                    'column_id' => ['A coluna informada não pertence ao quadro deste projeto.'],
+                    'column_id' => ['A coluna informada não pertence ao quadro.'],
                 ]);
             }
 
             return $column;
         }
 
-        return $this->boards->defaultColumn($project->board);
+        return $this->boards->defaultColumn();
     }
 
     /**

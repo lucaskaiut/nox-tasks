@@ -49,11 +49,6 @@ class Project extends Model
         return $this->belongsTo(Client::class)->withTrashed();
     }
 
-    public function board(): BelongsTo
-    {
-        return $this->belongsTo(Board::class);
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by')->withTrashed();

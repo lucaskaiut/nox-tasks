@@ -157,17 +157,13 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription.active'])->group(func
     Route::get('projects/{project}/activity', [ProjectController::class, 'activity'])->can('view', 'project');
     Route::post('projects/{project}/tasks', [TaskController::class, 'store'])->can('create', [Task::class, 'project']);
 
-    Route::get('boards', [BoardController::class, 'index'])->can('viewAny', Board::class);
-    Route::post('boards', [BoardController::class, 'store'])->can('create', Board::class);
-    Route::get('boards/{board}', [BoardController::class, 'show'])->can('view', 'board');
-    Route::match(['put', 'patch'], 'boards/{board}', [BoardController::class, 'update'])->can('manage', 'board');
-    Route::delete('boards/{board}', [BoardController::class, 'destroy'])->can('manage', 'board');
-    Route::post('boards/{board}/columns', [BoardController::class, 'storeColumn'])->can('manage', 'board');
-    Route::scopeBindings()->group(function (): void {
-        Route::match(['put', 'patch'], 'boards/{board}/columns/{column}', [BoardController::class, 'updateColumn'])->can('manage', 'board');
-        Route::post('boards/{board}/columns/{column}/move', [BoardController::class, 'moveColumn'])->can('manage', 'board');
-        Route::delete('boards/{board}/columns/{column}', [BoardController::class, 'destroyColumn'])->can('manage', 'board');
-    });
+    Route::get('board', [BoardController::class, 'show'])->can('view', Board::class);
+    Route::get('board/config', [BoardController::class, 'config'])->can('view', Board::class);
+    Route::match(['put', 'patch'], 'board', [BoardController::class, 'update'])->can('manage', Board::class);
+    Route::post('board/columns', [BoardController::class, 'storeColumn'])->can('manage', Board::class);
+    Route::match(['put', 'patch'], 'board/columns/{column}', [BoardController::class, 'updateColumn'])->can('manage', Board::class);
+    Route::post('board/columns/{column}/move', [BoardController::class, 'moveColumn'])->can('manage', Board::class);
+    Route::delete('board/columns/{column}', [BoardController::class, 'destroyColumn'])->can('manage', Board::class);
 
     Route::get('tasks', [TaskController::class, 'index'])->can('viewAny', Task::class);
     Route::get('tasks/{task}', [TaskController::class, 'show'])->can('view', 'task');

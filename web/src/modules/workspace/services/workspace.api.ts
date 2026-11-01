@@ -71,7 +71,7 @@ export const wsApi = {
     remove: (id: string) => send<null>('delete', `/tasks/${id}`),
     assign: (id: string, body: { assignee_id: string | null; participant_ids?: string[] }) =>
       send<Task>('post', `/tasks/${id}/assign`, body),
-    move: (id: string, body: { column_id: string; position?: number }) => send<Task>('post', `/tasks/${id}/move`, body),
+    move: (id: string, body: { column_id: string; position?: number; after_id?: string | null }) => send<Task>('post', `/tasks/${id}/move`, body),
     activity: (id: string, params?: Params) => page<Activity>(`/tasks/${id}/activity`, params),
     comments: (id: string) => page<Comment>(`/tasks/${id}/comments`, { per_page: 100 }),
     comment: (id: string, body: { body: string; visibility?: string }) => send<Comment>('post', `/tasks/${id}/comments`, body),
@@ -92,18 +92,16 @@ export const wsApi = {
     downloadUrl: (id: string) => `${http.defaults.baseURL}/attachments/${id}/download`,
   },
 
-  boards: {
-    list: (params?: Params) => page<Board>('/boards', { per_page: 100, ...params }),
-    get: (id: string) => get<Board>(`/boards/${id}`),
-    create: (body: Params) => send<Board>('post', '/boards', body),
-    update: (id: string, body: Params) => send<Board>('patch', `/boards/${id}`, body),
-    remove: (id: string) => send<null>('delete', `/boards/${id}`),
-    addColumn: (id: string, body: Params) => send<BoardColumn>('post', `/boards/${id}/columns`, body),
-    updateColumn: (id: string, columnId: string, body: Params) => send<BoardColumn>('patch', `/boards/${id}/columns/${columnId}`, body),
-    moveColumn: (id: string, columnId: string, position: number) =>
-      send<BoardColumn>('post', `/boards/${id}/columns/${columnId}/move`, { position }),
-    removeColumn: (id: string, columnId: string, moveTo?: string) =>
-      send<null>('delete', `/boards/${id}/columns/${columnId}`, moveTo ? { move_tasks_to: moveTo } : undefined),
+  /** Quadro Kanban geral (único) — tarefas de todos os projetos. */
+  board: {
+    get: (params?: Params) => get<{ board: Board; tasks: Task[] }>('/board', params),
+    config: () => get<Board>('/board/config'),
+    update: (body: Params) => send<Board>('patch', '/board', body),
+    addColumn: (body: Params) => send<BoardColumn>('post', '/board/columns', body),
+    updateColumn: (columnId: string, body: Params) => send<BoardColumn>('patch', `/board/columns/${columnId}`, body),
+    moveColumn: (columnId: string, position: number) => send<BoardColumn>('post', `/board/columns/${columnId}/move`, { position }),
+    removeColumn: (columnId: string, moveTo?: string) =>
+      send<null>('delete', `/board/columns/${columnId}`, moveTo ? { move_tasks_to: moveTo } : undefined),
   },
 
   notifications: {

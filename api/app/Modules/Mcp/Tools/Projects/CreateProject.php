@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create_project')]
-#[Description('Cria um projeto para um cliente ativo. Sem board_id, um quadro Kanban padrão é criado. member_ids: IDs de profissionais (use list_members).')]
+#[Description('Cria um projeto para um cliente ativo. member_ids: IDs de profissionais (use list_members).')]
 class CreateProject extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
@@ -24,7 +24,6 @@ class CreateProject extends WorkspaceTool
             'name' => $schema->string()->max(160)->required(),
             'client_id' => $schema->string()->format('uuid')->required(),
             'description' => $schema->string()->max(10000),
-            'board_id' => $schema->string()->format('uuid')->description('Quadro existente (opcional).'),
             'status' => $schema->string()->enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
             'starts_at' => $schema->string()->format('date'),
             'due_at' => $schema->string()->format('date'),

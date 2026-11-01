@@ -21,8 +21,18 @@ class BoardFactory extends Factory
     {
         return [
             'tenant_id' => Tenant::factory(),
-            'name' => fake()->words(2, true),
+            'name' => 'Quadro geral',
         ];
+    }
+
+    /**
+     * Quadro geral do tenant (único), criado com as colunas padrão de teste
+     * caso ainda não exista.
+     */
+    public static function generalFor(int $tenantId): Board
+    {
+        return Board::query()->withoutGlobalScopes()->where('tenant_id', $tenantId)->first()
+            ?? Board::factory()->withColumns()->create(['tenant_id' => $tenantId]);
     }
 
     /**

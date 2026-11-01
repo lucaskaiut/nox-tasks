@@ -1,103 +1,113 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link } from 'react-router'
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Columns3, GripVertical, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, GripVertical, Plus, Settings2, Trash2 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
-import { Button, Confirm, Dot, Empty, ErrorBlock, Field, IconButton, LoadingBlock, PageHeader, Panel, Pill, SelectInput, Sheet, TextArea, TextInput } from '../ui'
-import { useBoard, useBoards, useWsMutation } from '../hooks/useWorkspace'
+import { Permission } from '@/shared/constants/permissions'
+import { Button, ButtonLink, Confirm, Dot, ErrorBlock, Field, IconButton, LoadingBlock, PageHeader, Panel, Segmented, SelectInput, Sheet, TextArea, TextInput } from '../ui'
+import { useBoard, useBoardConfig, useProfile, useProjects, useWsMutation } from '../hooks/useWorkspace'
 import { COLUMN_COLORS, COLUMN_KINDS } from '../lib/format'
 import type { BoardColumn, ColumnKind } from '../lib/types'
 import { wsApi } from '../services/workspace.api'
+import { KanbanBoard } from '../components/KanbanBoard'
+import { TaskFormSheet } from '../components/TaskForm'
 
-export default function BoardsPage() {
-  const boards = useBoards()
-  const navigate = useNavigate()
-  const [creating, setCreating] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const create = useWsMutation((body: Record<string, unknown>) => wsApi.boards.create(body), 'Quadro criado')
+/**
+ * Quadro Kanban geral: um único quadro com as tarefas de todos os projetos
+ * visíveis ao usuário. O filtro por projeto apenas restringe a visão.
+ */
+export default function BoardPage() {
+  const { canManage, can, isClient } = useProfile()
+  const [project, setProject] = useState('')
+  const [scope, setScope] = useState<'all' | 'me'>('all')
+  const [newTaskColumn, setNewTaskColumn] = useState<string | null>(null)
+
+  const params: Record<string, unknown> = {}
+  if (project) params.project = project
+  if (scope === 'me') params.assignee = 'me'
+
+  const board = useBoard(params)
+  const projects = useProjects({ per_page: 100 })
+  const move = useWsMutation((args: { id: string; column: string; after: string | null }) =>
+    wsApi.tasks.move(args.id, args.after ? { column_id: args.column, after_id: args.after } : { column_id: args.column, position: 0 }),
+  )
+
+  if (board.isLoading) return <LoadingBlock rows={6} />
+  if (board.isError || !board.data) return <ErrorBlock message="Não foi possível carregar o quadro." onRetry={() => board.refetch()} />
+
+  const selected = projects.data?.data.find((item) => item.id === project)
+  const canMove = canManage(Permission.TASK_MOVE)
+  const canAdd = Boolean(selected) && !selected?.is_archived && can(Permission.TASK_CREATE)
 
   return (
     <div className="ws-rise">
       <PageHeader
-        eyebrow="Configuração"
-        title="Quadros Kanban"
-        description="Cada projeto usa um quadro. Colunas, cores e o significado de cada etapa são configuráveis."
+        eyebrow="Kanban"
+        title={board.data.board.name}
+        description={board.data.board.description ?? 'Todas as tarefas, de todos os projetos, em um só fluxo.'}
         actions={
-          <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>
-            Novo quadro
-          </Button>
+          canManage(Permission.BOARD_MANAGE) && (
+            <ButtonLink to="/w/board/settings" icon={<Settings2 className="size-3.5" />}>
+              Configurar colunas
+            </ButtonLink>
+          )
         }
       />
 
-      {boards.isLoading ? (
-        <LoadingBlock />
-      ) : boards.data?.data.length ? (
-        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {boards.data.data.map((board) => (
-            <li key={board.id}>
-              <Link to={`/w/boards/${board.id}`} className="block rounded-ws bg-ws-panel p-4 shadow-ws transition-shadow hover:shadow-ws-pop">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-[14px] font-medium text-ws-ink">{board.name}</p>
-                  <span className="tabular-nums text-[11px] text-ws-ink-3">{board.projects_count ?? 0} proj.</span>
-                </div>
-                {board.description && <p className="mt-1 line-clamp-2 text-[12.5px] text-ws-ink-2">{board.description}</p>}
-                <div className="mt-4 flex gap-1">
-                  {board.columns?.map((column) => (
-                    <span key={column.id} className="h-1.5 flex-1 rounded-full" style={{ background: column.color }} title={column.name} />
-                  ))}
-                </div>
-                <p className="mt-2 truncate text-[12px] text-ws-ink-3">{board.columns?.map((c) => c.name).join(' → ')}</p>
-              </Link>
-            </li>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <SelectInput aria-label="Filtrar por projeto" value={project} onChange={(e) => setProject(e.target.value)} className="h-8 w-auto min-w-52">
+          <option value="">Todos os projetos</option>
+          {projects.data?.data.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
           ))}
-        </ul>
-      ) : (
-        <Empty icon={Columns3} title="Nenhum quadro" description="Quadros também são criados automaticamente com cada projeto novo." />
+        </SelectInput>
+        {!isClient && (
+          <Segmented
+            label="Responsável"
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'all', label: 'Todas' },
+              { value: 'me', label: 'Minhas' },
+            ]}
+          />
+        )}
+        <span className="tabular-nums text-[12px] text-ws-ink-3">{board.data.tasks.length} tarefa(s)</span>
+        {!canMove && <span className="text-[12px] text-ws-ink-3">Visualização somente leitura.</span>}
+      </div>
+
+      <KanbanBoard
+        columns={board.data.board.columns ?? []}
+        tasks={board.data.tasks}
+        canMove={canMove}
+        showProject={!project}
+        onMove={(id, column, _position, after) => move.mutateAsync({ id, column, after })}
+        onAdd={canAdd ? (columnId) => setNewTaskColumn(canManage(Permission.TASK_UPDATE) ? columnId : '') : undefined}
+      />
+
+      {!canAdd && can(Permission.TASK_CREATE) && (
+        <p className="mt-1 text-[12px] text-ws-ink-3">Selecione um projeto para criar tarefas direto no quadro.</p>
       )}
 
-      <Sheet
-        open={creating}
-        onClose={() => setCreating(false)}
-        eyebrow="Novo quadro"
-        title="Criar quadro"
-        footer={
-          <Button
-            variant="primary"
-            loading={create.isPending}
-            disabled={!name.trim()}
-            onClick={async () => {
-              const board = await create.mutateAsync({ name, description: description || null })
-              setCreating(false)
-              setName('')
-              setDescription('')
-              navigate(`/w/boards/${board.id}`)
-            }}
-          >
-            Criar quadro
-          </Button>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <Field label="Nome" htmlFor="b-name">
-            <TextInput id="b-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
-          </Field>
-          <Field label="Descrição" htmlFor="b-desc">
-            <TextArea id="b-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-          </Field>
-          <p className="text-[12.5px] text-ws-ink-3">O quadro começa com colunas padrão (A fazer, Em andamento, Aguardando retorno, Concluído), que você pode alterar em seguida.</p>
-        </div>
-      </Sheet>
+      <TaskFormSheet
+        open={newTaskColumn !== null}
+        onClose={() => setNewTaskColumn(null)}
+        projectId={project || undefined}
+        columns={board.data.board.columns}
+        defaultColumnId={newTaskColumn || undefined}
+      />
     </div>
   )
 }
 
-function ColumnRow({ column, boardId, onDelete }: { column: BoardColumn; boardId: string; onDelete: (column: BoardColumn) => void }) {
+function ColumnRow({ column, onDelete }: { column: BoardColumn; onDelete: (column: BoardColumn) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: column.id })
   const [name, setName] = useState(column.name)
-  const update = useWsMutation((body: Record<string, unknown>) => wsApi.boards.updateColumn(boardId, column.id, body))
+  const update = useWsMutation((body: Record<string, unknown>) => wsApi.board.updateColumn(column.id, body))
 
   return (
     <li
@@ -151,21 +161,18 @@ function ColumnRow({ column, boardId, onDelete }: { column: BoardColumn; boardId
   )
 }
 
-export function BoardPage() {
-  const { id = '' } = useParams()
-  const navigate = useNavigate()
-  const board = useBoard(id)
+/** Configuração do quadro geral: nome, colunas, cores e significado de cada etapa. */
+export function BoardSettingsPage() {
+  const board = useBoardConfig()
   const [order, setOrder] = useState<string[] | null>(null)
   const [deleting, setDeleting] = useState<BoardColumn | null>(null)
   const [moveTo, setMoveTo] = useState('')
-  const [removingBoard, setRemovingBoard] = useState(false)
   const [details, setDetails] = useState<{ name: string; description: string } | null>(null)
 
-  const add = useWsMutation(() => wsApi.boards.addColumn(id, { name: 'Nova coluna', kind: 'open' }))
-  const reorder = useWsMutation((args: { columnId: string; position: number }) => wsApi.boards.moveColumn(id, args.columnId, args.position))
-  const removeColumn = useWsMutation((args: { columnId: string; moveTo?: string }) => wsApi.boards.removeColumn(id, args.columnId, args.moveTo), 'Coluna removida')
-  const updateBoard = useWsMutation((body: Record<string, unknown>) => wsApi.boards.update(id, body), 'Quadro atualizado')
-  const removeBoard = useWsMutation(() => wsApi.boards.remove(id), 'Quadro removido')
+  const add = useWsMutation(() => wsApi.board.addColumn({ name: 'Nova coluna', kind: 'open' }))
+  const reorder = useWsMutation((args: { columnId: string; position: number }) => wsApi.board.moveColumn(args.columnId, args.position))
+  const removeColumn = useWsMutation((args: { columnId: string; moveTo?: string }) => wsApi.board.removeColumn(args.columnId, args.moveTo), 'Coluna removida')
+  const updateBoard = useWsMutation((body: Record<string, unknown>) => wsApi.board.update(body), 'Quadro atualizado')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -174,9 +181,10 @@ export function BoardPage() {
   )
 
   if (board.isLoading) return <LoadingBlock />
-  if (board.isError || !board.data) return <ErrorBlock message="Quadro não encontrado." />
+  if (board.isError || !board.data) return <ErrorBlock message="Não foi possível carregar o quadro." onRetry={() => board.refetch()} />
 
-  const columns = board.data.columns ?? []
+  const info = board.data
+  const columns = info.columns ?? []
   const ids = order ?? columns.map((c) => c.id)
   const byId = new Map(columns.map((c) => [c.id, c]))
 
@@ -193,19 +201,15 @@ export function BoardPage() {
 
   return (
     <div className="ws-rise">
+      <Link to="/w/board" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-ws-ink-2 hover:text-ws-ink">
+        <ArrowLeft className="size-3.5" />
+        Voltar ao quadro
+      </Link>
       <PageHeader
-        eyebrow="Quadro Kanban"
-        title={board.data.name}
-        description={board.data.description}
-        meta={<Pill>{board.data.projects_count ?? 0} projeto(s) usando este quadro</Pill>}
-        actions={
-          <>
-            <Button onClick={() => setDetails({ name: board.data!.name, description: board.data!.description ?? '' })}>Renomear</Button>
-            <Button variant="danger" onClick={() => setRemovingBoard(true)} disabled={(board.data.projects_count ?? 0) > 0}>
-              Excluir
-            </Button>
-          </>
-        }
+        eyebrow="Configuração do quadro"
+        title={info.name}
+        description={info.description ?? 'Quadro único, compartilhado por todos os projetos. As colunas valem para todas as tarefas.'}
+        actions={<Button onClick={() => setDetails({ name: info.name, description: info.description ?? '' })}>Editar nome e descrição</Button>}
       />
 
       <Panel
@@ -223,7 +227,7 @@ export function BoardPage() {
             <ul>
               {ids.map((columnId) => {
                 const column = byId.get(columnId)
-                return column ? <ColumnRow key={column.id} column={column} boardId={id} onDelete={setDeleting} /> : null
+                return column ? <ColumnRow key={column.id} column={column} onDelete={setDeleting} /> : null
               })}
             </ul>
           </SortableContext>
@@ -269,19 +273,6 @@ export function BoardPage() {
           </SelectInput>
         </Field>
       </Confirm>
-
-      <Confirm
-        open={removingBoard}
-        destructive
-        title="Excluir quadro?"
-        description="Só é possível excluir quadros que não estão associados a projetos."
-        confirmLabel="Excluir"
-        onClose={() => setRemovingBoard(false)}
-        onConfirm={async () => {
-          await removeBoard.mutateAsync(undefined)
-          navigate('/w/boards')
-        }}
-      />
 
       <Sheet
         open={Boolean(details)}

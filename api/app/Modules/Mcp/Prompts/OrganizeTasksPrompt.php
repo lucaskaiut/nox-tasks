@@ -5,13 +5,14 @@ namespace App\Modules\Mcp\Prompts;
 use App\Modules\Mcp\Support\WorkspacePrompt;
 use App\Modules\Mcp\Support\WorkspaceSnapshots;
 use App\Modules\User\Models\User;
+use App\Modules\Workspace\Services\BoardService;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('organize_tasks')]
-#[Description('Sugere uma organização do Kanban de um projeto: priorização, ordem, responsáveis e quebra em subtarefas.')]
+#[Description('Sugere uma organização das tarefas de um projeto no quadro Kanban geral: priorização, ordem, responsáveis e quebra em subtarefas.')]
 class OrganizeTasksPrompt extends WorkspacePrompt
 {
     public function arguments(): array
@@ -22,7 +23,7 @@ class OrganizeTasksPrompt extends WorkspacePrompt
     protected function compose(Request $request, User $user): string
     {
         $project = $this->authorizedProject($user, $request->get('project_id'));
-        $kanban = app(WorkspaceSnapshots::class)->kanban($user, $project);
+        $kanban = app(WorkspaceSnapshots::class)->kanban($user, app(BoardService::class)->current(), $project);
 
         return <<<TXT
 Com base no quadro Kanban abaixo, sugira uma organização das tarefas:

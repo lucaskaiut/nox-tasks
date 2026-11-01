@@ -17,7 +17,7 @@ Servidor MCP do Nox Tasks — gestão de clientes, projetos, tarefas, subtarefas
 
 - Todas as operações são executadas em nome do usuário que autorizou a conexão, com as mesmas permissões dele na plataforma. Comece com `whoami`.
 - IDs são UUIDs. Use as ferramentas de listagem para descobri-los (list_projects, list_tasks, list_members, get_board).
-- O status de uma tarefa é a coluna do quadro do projeto; use `move_task` para alterá-lo e `get_board` (com project_id) para ver as colunas.
+- Há um único quadro Kanban geral, compartilhado por todos os projetos. O status de uma tarefa é a coluna desse quadro; use `move_task` para alterá-lo e `get_board` (opcionalmente com project_id) para ver as colunas e tarefas.
 - Tarefas e comentários "internal" nunca são vistos por usuários de cliente; use "shared" apenas para o que o cliente deve acompanhar.
 - Listagens são paginadas (page, per_page ≤ 50).
 - Antes de ações destrutivas (delete_*) ou alterações em massa, peça confirmação ao usuário.
@@ -30,12 +30,10 @@ class WorkspaceServer extends Server
     public int $maxPaginationLength = 100;
 
     protected array $tools = [
-        Tools\Boards\CreateBoard::class,
         Tools\Boards\CreateBoardColumn::class,
         Tools\Boards\DeleteBoardColumn::class,
         Tools\Boards\GetBoard::class,
         Tools\Boards\ListBoardColumns::class,
-        Tools\Boards\ListBoards::class,
         Tools\Boards\MoveBoardColumn::class,
         Tools\Boards\UpdateBoard::class,
         Tools\Boards\UpdateBoardColumn::class,

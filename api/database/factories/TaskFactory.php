@@ -32,7 +32,8 @@ class TaskFactory extends Factory
     public function forProject(Project $project, ColumnKind $kind = ColumnKind::OPEN): static
     {
         return $this->state(function () use ($project, $kind): array {
-            $column = $project->board->columns()->where('kind', $kind->value)->firstOrFail();
+            $column = BoardFactory::generalFor((int) $project->tenant_id)
+                ->columns()->where('kind', $kind->value)->firstOrFail();
 
             return [
                 'tenant_id' => $project->tenant_id,

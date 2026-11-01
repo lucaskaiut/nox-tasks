@@ -8,7 +8,7 @@ import { KanbanBoard } from '../components/KanbanBoard'
 import { ProjectFormSheet } from '../components/ProjectForm'
 import { TaskFormSheet } from '../components/TaskForm'
 import { TaskRow, TaskTableHead } from '../components/TaskRow'
-import { useProfile, useProject, useProjectBoard, useWsMutation } from '../hooks/useWorkspace'
+import { useBoardConfig, useProfile, useProject, useProjectBoard, useWsMutation } from '../hooks/useWorkspace'
 import { longDate } from '../lib/format'
 import type { Project } from '../lib/types'
 import { wsApi } from '../services/workspace.api'
@@ -20,6 +20,7 @@ type Ctx = { project: Project; newTask: (columnId?: string) => void }
 export default function ProjectPage() {
   const { id = '' } = useParams()
   const project = useProject(id)
+  const boardConfig = useBoardConfig()
   const { canManage, can } = useProfile()
   const [editing, setEditing] = useState(false)
   const [archiving, setArchiving] = useState(false)
@@ -101,7 +102,7 @@ export default function ProjectPage() {
         open={taskForm.open}
         onClose={() => setTaskForm({ open: false })}
         projectId={p.id}
-        columns={p.board?.columns ?? undefined}
+        columns={boardConfig.data?.columns}
         defaultColumnId={taskForm.columnId}
       />
       <Confirm
@@ -190,8 +191,8 @@ export function ProjectBoard() {
   const { project, newTask } = useOutletContext<Ctx>()
   const { canManage, can } = useProfile()
   const board = useProjectBoard(project.id)
-  const move = useWsMutation((args: { id: string; column: string; position: number }) =>
-    wsApi.tasks.move(args.id, { column_id: args.column, position: args.position }),
+  const move = useWsMutation((args: { id: string; column: string; position: number; after: string | null }) =>
+    wsApi.tasks.move(args.id, args.after ? { column_id: args.column, after_id: args.after } : { column_id: args.column, position: 0 }),
   )
 
   if (board.isLoading) return <LoadingBlock rows={4} />
@@ -208,7 +209,7 @@ export function ProjectBoard() {
         columns={board.data.board.columns ?? []}
         tasks={board.data.tasks}
         canMove={canMove}
-        onMove={(id, column, position) => move.mutateAsync({ id, column, position })}
+        onMove={(id, column, position, after) => move.mutateAsync({ id, column, position, after })}
         onAdd={can(Permission.TASK_CREATE) && !project.is_archived ? (columnId) => newTask(canManage(Permission.TASK_UPDATE) ? columnId : undefined) : undefined}
       />
     </div>

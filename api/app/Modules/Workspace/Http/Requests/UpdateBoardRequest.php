@@ -20,6 +20,6 @@ class UpdateBoardRequest extends FormRequest
      */
     public function rules(): array
     {
-        return WorkspaceRules::board(partial: true);
+        return WorkspaceRules::board();
     }
 }

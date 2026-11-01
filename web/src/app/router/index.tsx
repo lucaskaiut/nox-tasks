@@ -43,8 +43,8 @@ const WsProjectTasks = lazy(() => import('@/modules/workspace/pages/ProjectPage'
 const WsProjectActivity = lazy(() => import('@/modules/workspace/pages/ProjectPage').then((m) => ({ default: m.ProjectActivity })))
 const WsTasksPage = lazy(() => import('@/modules/workspace/pages/TasksPage'))
 const WsTaskPage = lazy(() => import('@/modules/workspace/pages/TaskPage'))
-const WsBoardsPage = lazy(() => import('@/modules/workspace/pages/BoardsPage'))
-const WsBoardPage = lazy(() => import('@/modules/workspace/pages/BoardsPage').then((m) => ({ default: m.BoardPage })))
+const WsBoardPage = lazy(() => import('@/modules/workspace/pages/BoardPage'))
+const WsBoardSettingsPage = lazy(() => import('@/modules/workspace/pages/BoardPage').then((m) => ({ default: m.BoardSettingsPage })))
 const WsClientsPage = lazy(() => import('@/modules/workspace/pages/ClientsPage'))
 const WsClientPage = lazy(() => import('@/modules/workspace/pages/ClientsPage').then((m) => ({ default: m.ClientPage })))
 const WsTeamPage = lazy(() => import('@/modules/workspace/pages/TeamPage'))
@@ -88,8 +88,9 @@ export const router = createBrowserRouter([
           },
           { path: 'tasks', element: <WsGuard permission={Permission.TASK_READ}><WsTasksPage /></WsGuard> },
           { path: 'tasks/:id', element: <WsGuard permission={Permission.TASK_READ}><WsTaskPage /></WsGuard> },
-          { path: 'boards', element: <WsGuard permission={Permission.BOARD_MANAGE} professional><WsBoardsPage /></WsGuard> },
-          { path: 'boards/:id', element: <WsGuard permission={Permission.BOARD_MANAGE} professional><WsBoardPage /></WsGuard> },
+          { path: 'board', element: <WsGuard permission={Permission.BOARD_READ}><WsBoardPage /></WsGuard> },
+          { path: 'board/settings', element: <WsGuard permission={Permission.BOARD_MANAGE} professional><WsBoardSettingsPage /></WsGuard> },
+          { path: 'boards/*', element: <Navigate to="/w/board" replace /> },
           { path: 'clients', element: <WsGuard permission={Permission.CLIENT_READ} professional><WsClientsPage /></WsGuard> },
           { path: 'clients/:id', element: <WsGuard permission={Permission.CLIENT_READ} professional><WsClientPage /></WsGuard> },
           { path: 'team', element: <WsGuard permission={Permission.TASK_ASSIGN} professional><WsTeamPage /></WsGuard> },

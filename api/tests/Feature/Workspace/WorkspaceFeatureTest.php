@@ -5,6 +5,7 @@ namespace Tests\Feature\Workspace;
 use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Enums\Visibility;
 use App\Modules\Workspace\Models\Activity;
+use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\BoardColumn;
 use App\Modules\Workspace\Models\Client;
 use App\Modules\Workspace\Models\Task;
@@ -26,7 +27,7 @@ class WorkspaceFeatureTest extends TestCase
         Sanctum::actingAs($this->professional);
     }
 
-    public function test_creates_and_updates_project_with_default_board_and_members(): void
+    public function test_creates_and_updates_project_with_members(): void
     {
         $member = $this->createProfessional($this->tenant);
 
@@ -41,7 +42,7 @@ class WorkspaceFeatureTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.client.id', $this->clientA->uuid)
             ->assertJsonPath('data.status', 'planning')
-            ->assertJsonCount(4, 'data.board.columns')
+            ->assertJsonMissingPath('data.board')
             ->assertJsonPath('data.members.0.id', $member->uuid)
             ->json('data.id');
 
@@ -155,9 +156,9 @@ class WorkspaceFeatureTest extends TestCase
         // Cliente da tarefa compartilhada é notificado da conclusão.
         $this->assertSame('task_completed', $this->clientUserA->notifications()->first()?->data['kind']);
 
-        // Coluna de outro quadro é rejeitada.
+        // Coluna inexistente no quadro é rejeitada.
         $this->postJson("/api/tasks/{$this->sharedTaskA->uuid}/move", [
-            'column_id' => $this->columnOf($this->projectB, ColumnKind::OPEN),
+            'column_id' => '00000000-0000-4000-8000-000000000000',
         ])->assertUnprocessable()->assertJsonValidationErrors(['column_id']);
 
         // Voltar para "aberto" limpa a conclusão.
@@ -167,62 +168,83 @@ class WorkspaceFeatureTest extends TestCase
         $this->assertNull($this->sharedTaskA->fresh()->completed_at);
     }
 
-    public function test_reorders_tasks_within_column(): void
+    public function test_reorders_tasks_within_column_across_projects(): void
     {
         $open = $this->columnOf($this->projectA, ColumnKind::OPEN);
+        $openId = BoardColumn::query()->where('uuid', $open)->value('id');
         $third = Task::factory()->forProject($this->projectA)->create();
 
+        // A ordem é única por coluna: reúne tarefas de todos os projetos.
         $this->postJson("/api/tasks/{$third->uuid}/move", ['column_id' => $open, 'position' => 0])->assertOk();
 
-        $order = Task::query()->where('project_id', $this->projectA->getKey())
-            ->where('board_column_id', BoardColumn::query()->where('uuid', $open)->value('id'))
-            ->orderBy('position')->pluck('id')->all();
+        $order = fn () => Task::query()->where('board_column_id', $openId)->orderBy('position')->pluck('id')->all();
+        $this->assertSame($third->getKey(), $order()[0]);
+        $this->assertCount(4, $order());
 
-        $this->assertSame($third->getKey(), $order[0]);
-        $this->assertCount(3, $order);
+        // after_id posiciona logo abaixo de outra tarefa (visões filtradas).
+        $this->postJson("/api/tasks/{$third->uuid}/move", ['column_id' => $open, 'after_id' => $this->sharedTaskB->uuid])->assertOk();
+
+        $ids = $order();
+        $this->assertSame(array_search($this->sharedTaskB->getKey(), $ids, true) + 1, array_search($third->getKey(), $ids, true));
+    }
+
+    public function test_general_board_lists_tasks_of_all_projects_with_filters(): void
+    {
+        $data = $this->getJson('/api/board')->assertOk()->json('data');
+
+        $this->assertSame(['A fazer', 'Em andamento', 'Aguardando', 'Concluído', 'Cancelado'], collect($data['board']['columns'])->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(
+            [$this->sharedTaskA->uuid, $this->internalTaskA->uuid, $this->sharedTaskB->uuid],
+            collect($data['tasks'])->pluck('id')->all(),
+        );
+
+        $ids = collect($this->getJson("/api/board?project={$this->projectB->uuid}")->assertOk()->json('data.tasks'))->pluck('id');
+        $this->assertSame([$this->sharedTaskB->uuid], $ids->all());
+    }
+
+    public function test_general_board_is_created_on_demand_with_default_columns(): void
+    {
+        Sanctum::actingAs($this->createAdmin($this->createTenantWithRoles(['domain' => 'novo.com.br'])));
+
+        $names = collect($this->getJson('/api/board')->assertOk()->json('data.board.columns'))->pluck('name');
+        $this->assertSame(['A fazer', 'Em andamento', 'Aguardando retorno', 'Concluído'], $names->all());
+
+        $this->getJson('/api/board')->assertOk();
+        $this->assertSame(2, Board::query()->withoutGlobalScopes()->count());
     }
 
     public function test_configures_board_columns(): void
     {
-        $boardId = $this->postJson('/api/boards', [
-            'name' => 'Desenvolvimento',
-            'columns' => [
-                ['name' => 'Backlog', 'kind' => 'open', 'color' => '#111111'],
-                ['name' => 'Feito', 'kind' => 'done'],
-            ],
-        ])->assertCreated()->assertJsonCount(2, 'data.columns')->json('data.id');
+        $this->patchJson('/api/board', ['name' => 'Operação'])->assertOk()->assertJsonPath('data.name', 'Operação');
 
-        $review = $this->postJson("/api/boards/{$boardId}/columns", ['name' => 'Revisão', 'kind' => 'waiting', 'position' => 1])
+        $review = $this->postJson('/api/board/columns', ['name' => 'Revisão', 'kind' => 'waiting', 'position' => 1])
             ->assertCreated()->assertJsonPath('data.position', 1)->json('data.id');
 
-        $this->postJson("/api/boards/{$boardId}/columns/{$review}/move", ['position' => 0])->assertOk()->assertJsonPath('data.position', 0);
+        $this->postJson("/api/board/columns/{$review}/move", ['position' => 0])->assertOk()->assertJsonPath('data.position', 0);
 
-        $this->patchJson("/api/boards/{$boardId}/columns/{$review}", ['name' => 'Em revisão', 'color' => '#ff0000'])
+        $this->patchJson("/api/board/columns/{$review}", ['name' => 'Em revisão', 'color' => '#ff0000'])
             ->assertOk()->assertJsonPath('data.name', 'Em revisão');
 
-        $names = collect($this->getJson("/api/boards/{$boardId}")->json('data.columns'))->pluck('name');
-        $this->assertSame(['Em revisão', 'Backlog', 'Feito'], $names->all());
+        $names = collect($this->getJson('/api/board/config')->assertOk()->assertJsonMissingPath('data.tasks')->json('data.columns'))->pluck('name');
+        $this->assertSame(['Em revisão', 'A fazer', 'Em andamento', 'Aguardando', 'Concluído', 'Cancelado'], $names->all());
 
-        $this->patchJson("/api/boards/{$boardId}/columns/{$review}", ['color' => 'red'])->assertUnprocessable();
+        $this->patchJson("/api/board/columns/{$review}", ['color' => 'red'])->assertUnprocessable();
     }
 
     public function test_deleting_column_with_tasks_requires_destination(): void
     {
-        $board = $this->projectA->board;
+        $board = Board::query()->firstOrFail();
         $open = $board->columns()->where('kind', 'open')->first();
         $waiting = $board->columns()->where('kind', 'waiting')->first();
 
-        $this->deleteJson("/api/boards/{$board->uuid}/columns/{$open->uuid}")
+        $this->deleteJson("/api/board/columns/{$open->uuid}")
             ->assertUnprocessable()->assertJsonValidationErrors(['move_tasks_to']);
 
-        $this->deleteJson("/api/boards/{$board->uuid}/columns/{$open->uuid}", ['move_tasks_to' => $waiting->uuid])->assertOk();
+        $this->deleteJson("/api/board/columns/{$open->uuid}", ['move_tasks_to' => $waiting->uuid])->assertOk();
 
         $this->assertSame($waiting->getKey(), $this->sharedTaskA->fresh()->board_column_id);
+        $this->assertSame($waiting->getKey(), $this->sharedTaskB->fresh()->board_column_id);
         $this->assertDatabaseMissing('board_columns', ['id' => $open->getKey()]);
-
-        // Coluna de outro quadro via rota aninhada: 404 (scoped binding).
-        $foreign = $this->projectB->board->columns()->first();
-        $this->deleteJson("/api/boards/{$board->uuid}/columns/{$foreign->uuid}")->assertNotFound();
     }
 
     public function test_subtasks_progress_and_completion(): void

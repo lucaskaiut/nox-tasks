@@ -30,13 +30,6 @@ class ProjectResource extends JsonResource
                 'id' => $this->client?->uuid,
                 'name' => $this->client?->name,
             ]),
-            'board' => $this->whenLoaded('board', fn () => [
-                'id' => $this->board?->uuid,
-                'name' => $this->board?->name,
-                'columns' => $this->board?->relationLoaded('columns')
-                    ? BoardColumnResource::collection($this->board->columns)
-                    : null,
-            ]),
             'members' => MemberResource::collection($this->whenLoaded('members')),
             'starts_at' => $this->starts_at?->toDateString(),
             'due_at' => $this->due_at?->toDateString(),

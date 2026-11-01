@@ -28,7 +28,6 @@ export const projectSchema = z
     name: z.string().trim().min(1, 'Informe o nome').max(160),
     description: z.string().max(10000),
     client_id: z.string().min(1, 'Selecione o cliente'),
-    board_id: z.string(),
     status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
     starts_at: optionalDate,
     due_at: optionalDate,

@@ -7,11 +7,13 @@ use App\Modules\Tenant\Models\Tenant;
 use App\Modules\User\Models\User;
 use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Enums\Visibility;
+use App\Modules\Workspace\Models\BoardColumn;
 use App\Modules\Workspace\Models\Client;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Models\Subtask;
 use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Models\TaskComment;
+use Database\Factories\BoardFactory;
 
 /**
  * Cenário padrão: um tenant com um profissional e dois clientes (A e B),
@@ -100,8 +102,13 @@ trait InteractsWithWorkspace
         return $subtask;
     }
 
+    /**
+     * Coluna do quadro geral do tenant do projeto (o quadro é único por tenant).
+     */
     protected function columnOf(Project $project, ColumnKind $kind): string
     {
-        return $project->board->columns()->where('kind', $kind->value)->firstOrFail()->uuid;
+        return BoardColumn::query()->withoutGlobalScopes()
+            ->where('board_id', BoardFactory::generalFor((int) $project->tenant_id)->getKey())
+            ->where('kind', $kind->value)->orderBy('position')->firstOrFail()->uuid;
     }
 }

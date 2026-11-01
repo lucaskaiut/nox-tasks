@@ -77,7 +77,6 @@ final class WorkspaceRules
             'name' => [...$required, 'string', 'max:160'],
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'client_id' => [...$required, 'uuid', self::activeClient()],
-            'board_id' => ['sometimes', 'nullable', 'uuid', self::tenantExists('boards')],
             'status' => ['sometimes', Rule::enum(ProjectStatus::class)],
             'starts_at' => ['sometimes', 'nullable', 'date'],
             'due_at' => ['sometimes', 'nullable', 'date', 'after_or_equal:starts_at'],
@@ -106,19 +105,11 @@ final class WorkspaceRules
     /**
      * @return array<string, mixed>
      */
-    public static function board(bool $partial = false): array
+    public static function board(): array
     {
-        $required = $partial ? ['sometimes', 'required'] : ['required'];
-
         return [
-            'name' => [...$required, 'string', 'max:120'],
+            'name' => ['sometimes', 'required', 'string', 'max:120'],
             'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
-            ...($partial ? [] : [
-                'columns' => ['sometimes', 'array', 'max:20'],
-                'columns.*.name' => ['required', 'string', 'max:60'],
-                'columns.*.color' => ['sometimes', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-                'columns.*.kind' => ['sometimes', Rule::enum(ColumnKind::class)],
-            ]),
         ];
     }
 
@@ -183,6 +174,7 @@ final class WorkspaceRules
         return [
             'column_id' => ['required', 'uuid'],
             'position' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'after_id' => ['sometimes', 'nullable', 'uuid'],
         ];
     }
 

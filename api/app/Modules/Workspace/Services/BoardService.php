@@ -2,14 +2,12 @@
 
 namespace App\Modules\Workspace\Services;
 
-use App\Modules\User\Models\User;
 use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Enums\Visibility;
 use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\BoardColumn;
 use App\Modules\Workspace\Models\Task;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 class BoardService
 {
     /**
-     * Colunas iniciais de um quadro novo — totalmente editáveis depois.
+     * Colunas iniciais do quadro geral — totalmente editáveis depois.
      *
      * @var list<array{name: string, color: string, kind: ColumnKind}>
      */
@@ -32,59 +30,37 @@ class BoardService
 
     public function __construct(private readonly ActivityService $activity) {}
 
-    public function paginate(User $actor, ?string $search = null, int $perPage = 15): LengthAwarePaginator
-    {
-        return Board::query()
-            ->visibleTo($actor)
-            ->with('columns')
-            ->withCount(['projects' => fn (Builder $q) => $q->visibleTo($actor)])
-            ->when(filled($search), fn (Builder $q) => $q->where('name', 'like', "%{$search}%"))
-            ->orderBy('name')
-            ->paginate(min(max($perPage, 1), 100));
-    }
-
     /**
-     * A contagem de projetos respeita o escopo do usuário: um quadro pode ser
-     * usado por projetos de clientes diferentes.
+     * Quadro geral do tenant atual. É criado sob demanda, com as colunas
+     * padrão, na primeira vez em que for necessário.
      */
-    public function load(Board $board, ?User $actor = null): Board
+    public function current(): Board
     {
-        $actor ??= auth()->user();
+        $board = Board::query()->first();
 
-        return $board->load('columns')->loadCount([
-            'projects' => fn (Builder $q) => $actor instanceof User ? $q->visibleTo($actor) : $q,
-        ]);
+        if ($board !== null) {
+            return $board;
+        }
+
+        try {
+            return DB::transaction(function (): Board {
+                $board = Board::query()->create(['name' => 'Quadro geral']);
+
+                foreach (self::DEFAULT_COLUMNS as $position => $column) {
+                    $board->columns()->create([...$column, 'position' => $position]);
+                }
+
+                return $board;
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Outra requisição criou o quadro ao mesmo tempo.
+            return Board::query()->firstOrFail();
+        }
     }
 
-    /**
-     * @param  array{name: string, description?: ?string, columns?: list<array{name: string, color?: string, kind?: string}>}  $data
-     */
-    public function create(array $data): Board
+    public function load(Board $board): Board
     {
-        return DB::transaction(function () use ($data): Board {
-            $board = Board::query()->create(Arr::only($data, ['name', 'description']));
-
-            $columns = $data['columns'] ?? [];
-            $columns = $columns === [] ? self::DEFAULT_COLUMNS : $columns;
-
-            foreach (array_values($columns) as $position => $column) {
-                $board->columns()->create([
-                    'name' => $column['name'],
-                    'color' => $column['color'] ?? '#71717a',
-                    'kind' => $column['kind'] ?? ColumnKind::OPEN,
-                    'position' => $position,
-                ]);
-            }
-
-            $this->activity->record('board.created', $board, Visibility::INTERNAL);
-
-            return $this->load($board);
-        });
-    }
-
-    public function createDefaultFor(string $projectName): Board
-    {
-        return $this->create(['name' => $projectName, 'description' => null]);
+        return $board->load('columns');
     }
 
     /**
@@ -101,21 +77,6 @@ class BoardService
         }
 
         return $this->load($board);
-    }
-
-    /**
-     * @throws ValidationException
-     */
-    public function delete(Board $board): void
-    {
-        if ($board->projects()->withTrashed()->exists()) {
-            throw ValidationException::withMessages([
-                'board' => ['O quadro está associado a projetos e não pode ser removido.'],
-            ]);
-        }
-
-        $board->delete();
-        $this->activity->record('board.deleted', $board, Visibility::INTERNAL);
     }
 
     /**
@@ -183,7 +144,7 @@ class BoardService
 
     /**
      * Exclui a coluna. Se houver tarefas (inclusive na lixeira), é obrigatório
-     * indicar uma coluna de destino do mesmo quadro.
+     * indicar outra coluna de destino.
      *
      * @throws ValidationException
      */
@@ -207,7 +168,7 @@ class BoardService
 
                 if ((int) $moveTo->board_id !== (int) $column->board_id || $moveTo->is($column)) {
                     throw ValidationException::withMessages([
-                        'move_tasks_to' => ['A coluna de destino deve ser outra coluna do mesmo quadro.'],
+                        'move_tasks_to' => ['A coluna de destino deve ser outra coluna do quadro.'],
                     ]);
                 }
 
@@ -235,8 +196,10 @@ class BoardService
     /**
      * Primeira coluna "em aberto" do quadro — destino padrão de tarefas novas.
      */
-    public function defaultColumn(Board $board): BoardColumn
+    public function defaultColumn(?Board $board = null): BoardColumn
     {
+        $board ??= $this->current();
+
         return $board->columns()->where('kind', ColumnKind::OPEN->value)->first()
             ?? $board->columns()->whereNotIn('kind', ColumnKind::closedValues())->first()
             ?? $board->columns()->firstOrFail();

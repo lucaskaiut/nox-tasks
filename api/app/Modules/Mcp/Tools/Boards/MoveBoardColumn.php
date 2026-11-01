@@ -13,13 +13,12 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('move_board_column')]
-#[Description('Reordena uma coluna dentro do quadro (0 = primeira posição).')]
+#[Description('Reordena uma coluna do quadro geral (0 = primeira posição).')]
 class MoveBoardColumn extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
-            'board_id' => $schema->string()->format('uuid')->required(),
             'column_id' => $schema->string()->format('uuid')->required(),
             'position' => $schema->integer()->min(0)->max(100)->required(),
         ];
@@ -32,7 +31,7 @@ class MoveBoardColumn extends WorkspaceTool
 
     protected function run(Request $request, User $user): array
     {
-        $board = $this->authorizedBoard($user, $request->get('board_id'), 'manage');
+        $board = $this->authorizedBoard($user, 'manage');
         $column = $board->columns()->where('uuid', (string) $request->get('column_id'))->firstOrFail();
         $data = $request->validate(['position' => ['required', 'integer', 'min:0', 'max:100']]);
 

@@ -6,10 +6,8 @@ use App\Modules\User\Models\User;
 use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Enums\ProjectStatus;
 use App\Modules\Workspace\Enums\Visibility;
-use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\Client;
 use App\Modules\Workspace\Models\Project;
-use App\Modules\Workspace\Models\Task;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -24,10 +22,9 @@ class ProjectService
      * Campos cujo histórico nunca é exibido a clientes. "client" é interno para
      * não revelar a um cliente o nome do cliente anterior do projeto.
      */
-    private const INTERNAL_FIELDS = ['internal_notes', 'client', 'members', 'board'];
+    private const INTERNAL_FIELDS = ['internal_notes', 'client', 'members'];
 
     public function __construct(
-        private readonly BoardService $boards,
         private readonly MemberService $members,
         private readonly ActivityService $activity,
         private readonly WorkspaceNotifier $notifier,
@@ -71,7 +68,7 @@ class ProjectService
 
     public function load(Project $project, User $actor): Project
     {
-        $project->load(['client:id,uuid,name,email', 'board.columns', 'members:id,uuid,name,email', 'creator:id,uuid,name']);
+        $project->load(['client:id,uuid,name,email', 'members:id,uuid,name,email', 'creator:id,uuid,name']);
 
         $counts = $this->withProgress(Project::query()->whereKey($project->getKey()), $actor)->first();
 
@@ -90,14 +87,9 @@ class ProjectService
         return DB::transaction(function () use ($actor, $data): Project {
             $client = Client::query()->where('uuid', $data['client_id'])->firstOrFail();
 
-            $board = filled($data['board_id'] ?? null)
-                ? Board::query()->where('uuid', $data['board_id'])->firstOrFail()
-                : $this->boards->createDefaultFor($data['name']);
-
             $project = new Project(Arr::only($data, self::FIELDS));
             $project->status ??= ProjectStatus::PLANNING;
             $project->client()->associate($client);
-            $project->board()->associate($board);
             $project->created_by = $actor->getKey();
             $project->save();
 
@@ -132,10 +124,6 @@ class ProjectService
 
             if (array_key_exists('client_id', $data)) {
                 $changes += $this->changeClient($project, $data['client_id']);
-            }
-
-            if (array_key_exists('board_id', $data) && filled($data['board_id'])) {
-                $changes += $this->changeBoard($project, $data['board_id']);
             }
 
             $project->save();
@@ -220,39 +208,6 @@ class ProjectService
         $project->client()->associate($client);
 
         return ['client' => ['from' => $from, 'to' => $client->name]];
-    }
-
-    /**
-     * Ao trocar o quadro, as tarefas são realocadas na primeira coluna
-     * equivalente (mesmo "kind") do novo quadro, ou na coluna padrão.
-     *
-     * @return array<string, array{from: mixed, to: mixed}>
-     */
-    private function changeBoard(Project $project, string $boardUuid): array
-    {
-        $board = Board::query()->where('uuid', $boardUuid)->firstOrFail();
-
-        if ((int) $board->getKey() === (int) $project->board_id) {
-            return [];
-        }
-
-        $from = $project->board?->name;
-        $columns = $board->columns()->get();
-        $fallback = $this->boards->defaultColumn($board);
-
-        Task::query()->withTrashed()
-            ->where('project_id', $project->getKey())
-            ->with('column')
-            ->get()
-            ->each(function (Task $task) use ($columns, $fallback): void {
-                $target = $columns->first(fn ($c) => $c->kind === $task->column?->kind) ?? $fallback;
-                $task->board_column_id = $target->getKey();
-                $task->save();
-            });
-
-        $project->board()->associate($board);
-
-        return ['board' => ['from' => $from, 'to' => $board->name]];
     }
 
     /**

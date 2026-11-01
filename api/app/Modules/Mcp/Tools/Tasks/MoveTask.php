@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('move_task')]
-#[Description('Move uma tarefa para outra coluna do quadro do projeto (altera o status) e/ou posição. Colunas do tipo "done" marcam a tarefa como concluída. Use get_board para ver as colunas.')]
+#[Description('Move uma tarefa para outra coluna do quadro geral (altera o status) e/ou posição. Colunas do tipo "done" marcam a tarefa como concluída. Use get_board para ver as colunas.')]
 class MoveTask extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
@@ -22,7 +22,7 @@ class MoveTask extends WorkspaceTool
         return [
             'task_id' => $schema->string()->format('uuid')->required(),
             'column_id' => $schema->string()->format('uuid')->required(),
-            'position' => $schema->integer()->min(0)->description('Posição na coluna (0 = topo). Padrão: final.'),
+            'position' => $schema->integer()->min(0)->description('Posição na coluna do quadro geral, que reúne todos os projetos (0 = topo). Padrão: final.'),
         ];
     }
 

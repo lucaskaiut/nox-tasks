@@ -231,15 +231,15 @@ class WorkspaceIsolationTest extends TestCase
         $this->getJson('/api/clients')->assertForbidden();
         $this->postJson('/api/clients', ['name' => 'X', 'email' => 'x@x.com'])->assertForbidden();
         $this->postJson('/api/projects', ['name' => 'X', 'client_id' => $this->clientA->uuid])->assertForbidden();
-        $this->postJson('/api/boards', ['name' => 'X'])->assertForbidden();
-        $this->patchJson("/api/boards/{$this->projectA->board->uuid}", ['name' => 'X'])->assertForbidden();
+        $this->patchJson('/api/board', ['name' => 'X'])->assertForbidden();
+        $this->postJson('/api/board/columns', ['name' => 'X'])->assertForbidden();
         $this->patchJson("/api/tasks/{$this->sharedTaskA->uuid}", ['title' => 'X'])->assertForbidden();
         $this->getJson('/api/workspace/members')->assertForbidden();
 
-        // Quadros: só os ligados aos próprios projetos.
-        $this->getJson("/api/boards/{$this->projectB->board->uuid}")->assertNotFound();
-        $ids = collect($this->getJson('/api/boards')->assertOk()->json('data'))->pluck('id');
-        $this->assertSame([$this->projectA->board->uuid], $ids->all());
+        // Quadro geral: só as próprias tarefas compartilhadas.
+        $ids = collect($this->getJson('/api/board')->assertOk()->json('data.tasks'))->pluck('id');
+        $this->assertSame([$this->sharedTaskA->uuid], $ids->all());
+        $this->getJson("/api/board?project={$this->projectB->uuid}")->assertOk()->assertJsonCount(0, 'data.tasks');
     }
 
     // 13
@@ -271,7 +271,7 @@ class WorkspaceIsolationTest extends TestCase
         $this->getJson('/api/tasks')->assertOk()->assertJsonPath('meta.total', 0);
         $this->getJson("/api/tasks/{$this->sharedTaskA->uuid}")->assertNotFound();
         $this->getJson("/api/clients/{$this->clientA->uuid}")->assertNotFound();
-        $this->getJson("/api/boards/{$this->projectA->board->uuid}")->assertNotFound();
+        $this->getJson('/api/board')->assertOk()->assertJsonCount(0, 'data.tasks');
     }
 
     public function test_client_dashboard_counts_only_own_shared_tasks(): void
@@ -346,15 +346,15 @@ class WorkspaceIsolationTest extends TestCase
         $this->assertSame(['layout'], $tags->all());
     }
 
-    public function test_shared_board_does_not_reveal_other_clients_projects(): void
+    public function test_column_of_another_tenant_is_not_found(): void
     {
-        // Quadro reutilizado por projetos de dois clientes.
-        $this->projectB->forceFill(['board_id' => $this->projectA->board_id])->save();
+        $otherTenant = $this->createTenantWithRoles(['domain' => 'outro.com.br']);
+        Sanctum::actingAs($this->createAdmin($otherTenant));
 
-        Sanctum::actingAs($this->clientUserA);
+        $column = $this->columnOf($this->projectA, ColumnKind::OPEN);
 
-        $this->getJson("/api/boards/{$this->projectA->board->uuid}")->assertOk()->assertJsonPath('data.projects_count', 1);
-        $this->getJson('/api/boards')->assertOk()->assertJsonPath('data.0.projects_count', 1);
+        $this->patchJson("/api/board/columns/{$column}", ['name' => 'X'])->assertNotFound();
+        $this->deleteJson("/api/board/columns/{$column}")->assertNotFound();
     }
 
     public function test_client_change_history_is_internal(): void

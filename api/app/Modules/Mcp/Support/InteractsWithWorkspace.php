@@ -7,6 +7,7 @@ use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\Client;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Models\Task;
+use App\Modules\Workspace\Services\BoardService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
@@ -72,12 +73,14 @@ trait InteractsWithWorkspace
         return $client;
     }
 
-    protected function authorizedBoard(User $user, mixed $uuid, string $ability = 'view'): Board
+    /**
+     * Quadro geral do tenant (único), após autorizar a ação.
+     */
+    protected function authorizedBoard(User $user, string $ability = 'view'): Board
     {
-        $board = $this->findOrFail(Board::class, $uuid);
-        $this->authorizeFor($user, $ability, $board);
+        $this->authorizeFor($user, $ability, Board::class);
 
-        return $board;
+        return app(BoardService::class)->current();
     }
 
     /**

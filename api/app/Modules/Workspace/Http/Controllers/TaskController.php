@@ -82,6 +82,7 @@ class TaskController extends ApiController
             $task,
             $request->validated('column_id'),
             $request->validated('position'),
+            $request->validated('after_id'),
         );
 
         return $this->success(TaskResource::make($task));

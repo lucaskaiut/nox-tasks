@@ -13,14 +13,13 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[Name('delete_board_column')]
-#[Description('Exclui uma coluna. Se houver tarefas nela, move_tasks_to (outra coluna do mesmo quadro) é obrigatório. Ação destrutiva: confirme com o usuário.')]
+#[Description('Exclui uma coluna. Se houver tarefas nela, move_tasks_to (outra coluna do quadro) é obrigatório. Ação destrutiva: confirme com o usuário.')]
 #[IsDestructive]
 class DeleteBoardColumn extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
-            'board_id' => $schema->string()->format('uuid')->required(),
             'column_id' => $schema->string()->format('uuid')->required(),
             'move_tasks_to' => $schema->string()->format('uuid'),
         ];
@@ -33,7 +32,7 @@ class DeleteBoardColumn extends WorkspaceTool
 
     protected function run(Request $request, User $user): array
     {
-        $board = $this->authorizedBoard($user, $request->get('board_id'), 'manage');
+        $board = $this->authorizedBoard($user, 'manage');
         $column = $board->columns()->where('uuid', (string) $request->get('column_id'))->firstOrFail();
         $data = $request->validate(['move_tasks_to' => ['nullable', 'uuid']]);
 

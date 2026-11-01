@@ -39,7 +39,7 @@ function useNavigation(): NavEntry[] {
     { to: '/w', label: isClient ? 'Início' : 'Visão geral', icon: LayoutGrid, end: true, show: true },
     { to: '/w/projects', label: 'Projetos', icon: FolderKanban, show: can(Permission.PROJECT_READ) },
     { to: '/w/tasks', label: 'Tarefas', icon: ListChecks, show: can(Permission.TASK_READ) },
-    { to: '/w/boards', label: 'Quadros', icon: Columns3, show: canManage(Permission.BOARD_MANAGE) },
+    { to: '/w/board', label: 'Quadro', icon: Columns3, show: can(Permission.BOARD_READ) && can(Permission.TASK_READ) },
     { to: '/w/clients', label: 'Clientes', icon: Building2, show: canManage(Permission.CLIENT_READ) },
     { to: '/w/team', label: 'Equipe', icon: Users, show: canManage(Permission.TASK_ASSIGN) },
   ].filter((entry) => entry.show)

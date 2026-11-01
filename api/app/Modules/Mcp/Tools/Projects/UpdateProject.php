@@ -24,7 +24,6 @@ class UpdateProject extends WorkspaceTool
             'name' => $schema->string()->max(160),
             'client_id' => $schema->string()->format('uuid'),
             'description' => $schema->string()->max(10000)->nullable(),
-            'board_id' => $schema->string()->format('uuid'),
             'status' => $schema->string()->enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
             'starts_at' => $schema->string()->format('date')->nullable(),
             'due_at' => $schema->string()->format('date')->nullable(),

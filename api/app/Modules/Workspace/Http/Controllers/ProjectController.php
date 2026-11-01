@@ -12,6 +12,7 @@ use App\Modules\Workspace\Http\Resources\ProjectResource;
 use App\Modules\Workspace\Http\Resources\TaskResource;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Services\ActivityService;
+use App\Modules\Workspace\Services\BoardService;
 use App\Modules\Workspace\Services\ProjectService;
 use App\Modules\Workspace\Services\TaskService;
 use Illuminate\Http\JsonResponse;
@@ -64,16 +65,14 @@ class ProjectController extends ApiController
     }
 
     /**
-     * Quadro do projeto com as tarefas visíveis ao usuário.
+     * Quadro geral filtrado pelas tarefas do projeto visíveis ao usuário.
      */
-    public function board(Request $request, Project $project): JsonResponse
+    public function board(Request $request, Project $project, BoardService $boards): JsonResponse
     {
-        $project->load('board.columns');
-
         $tasks = $this->tasks->query($request->user(), ['project' => $project->uuid])->limit(1000)->get();
 
         return $this->success([
-            'board' => BoardResource::make($project->board),
+            'board' => BoardResource::make($boards->load($boards->current())),
             'tasks' => TaskResource::collection($tasks),
         ]);
     }

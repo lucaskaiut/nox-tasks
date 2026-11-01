@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Modules\Workspace\Enums\ProjectStatus;
-use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\Client;
 use App\Modules\Workspace\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,15 +27,17 @@ class ProjectFactory extends Factory
         ];
     }
 
-    public function forClient(Client $client, ?Board $board = null): static
+    /**
+     * Garante também o quadro geral do tenant, onde ficam as tarefas.
+     */
+    public function forClient(Client $client): static
     {
-        return $this->state(function () use ($client, $board): array {
-            $board ??= Board::factory()->withColumns()->create(['tenant_id' => $client->tenant_id]);
+        return $this->state(function () use ($client): array {
+            BoardFactory::generalFor((int) $client->tenant_id);
 
             return [
                 'tenant_id' => $client->tenant_id,
                 'client_id' => $client->getKey(),
-                'board_id' => $board->getKey(),
             ];
         });
     }

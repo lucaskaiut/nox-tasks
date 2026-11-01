@@ -20,7 +20,6 @@ class UpdateBoardColumn extends WorkspaceTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'board_id' => $schema->string()->format('uuid')->required(),
             'column_id' => $schema->string()->format('uuid')->required(),
             'name' => $schema->string()->max(60),
             'color' => $schema->string()->pattern('^#[0-9a-fA-F]{6}$'),
@@ -35,7 +34,7 @@ class UpdateBoardColumn extends WorkspaceTool
 
     protected function run(Request $request, User $user): array
     {
-        $board = $this->authorizedBoard($user, $request->get('board_id'), 'manage');
+        $board = $this->authorizedBoard($user, 'manage');
         $column = $board->columns()->where('uuid', (string) $request->get('column_id'))->firstOrFail();
 
         $data = $request->validate(WorkspaceRules::column(partial: true));

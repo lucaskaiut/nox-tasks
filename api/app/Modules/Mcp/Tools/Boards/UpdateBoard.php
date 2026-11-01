@@ -15,14 +15,13 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 
 #[Name('update_board')]
-#[Description('Altera nome e/ou descrição de um quadro. Para colunas, use as ferramentas de coluna.')]
+#[Description('Altera nome e/ou descrição do quadro geral. Para colunas, use as ferramentas de coluna.')]
 #[IsIdempotent]
 class UpdateBoard extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
-            'board_id' => $schema->string()->format('uuid')->required(),
             'name' => $schema->string()->max(120),
             'description' => $schema->string()->max(2000)->nullable(),
         ];
@@ -35,8 +34,8 @@ class UpdateBoard extends WorkspaceTool
 
     protected function run(Request $request, User $user): array
     {
-        $board = $this->authorizedBoard($user, $request->get('board_id'), 'manage');
+        $board = $this->authorizedBoard($user, 'manage');
 
-        return $this->item(BoardResource::class, app(BoardService::class)->update($board, $request->validate(WorkspaceRules::board(partial: true))));
+        return $this->item(BoardResource::class, app(BoardService::class)->update($board, $request->validate(WorkspaceRules::board())));
     }
 }

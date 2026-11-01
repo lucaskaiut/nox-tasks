@@ -3,76 +3,93 @@
 namespace App\Modules\Workspace\Http\Controllers;
 
 use App\Modules\Shared\Http\Controllers\ApiController;
-use App\Modules\Workspace\Http\Requests\StoreBoardRequest;
 use App\Modules\Workspace\Http\Requests\StoreColumnRequest;
 use App\Modules\Workspace\Http\Requests\UpdateBoardRequest;
 use App\Modules\Workspace\Http\Requests\UpdateColumnRequest;
 use App\Modules\Workspace\Http\Resources\BoardColumnResource;
 use App\Modules\Workspace\Http\Resources\BoardResource;
-use App\Modules\Workspace\Models\Board;
+use App\Modules\Workspace\Http\Resources\TaskResource;
 use App\Modules\Workspace\Models\BoardColumn;
 use App\Modules\Workspace\Services\BoardService;
+use App\Modules\Workspace\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Quadro Kanban geral do tenant (único) e suas colunas.
+ */
 class BoardController extends ApiController
 {
-    public function __construct(private readonly BoardService $service) {}
+    public function __construct(
+        private readonly BoardService $service,
+        private readonly TaskService $tasks,
+    ) {}
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Quadro com as tarefas visíveis ao usuário. Filtros opcionais
+     * (projeto, cliente, responsável, prioridade, busca) apenas restringem
+     * esse conjunto.
+     */
+    public function show(Request $request): JsonResponse
     {
-        return $this->paginated(BoardResource::collection($this->service->paginate(
-            $request->user(),
-            $request->string('search')->limit(100, '')->toString() ?: null,
-            (int) $request->integer('per_page', 15),
-        )));
+        $filters = $request->validate([
+            'project' => ['nullable', 'uuid'],
+            'client' => ['nullable', 'uuid'],
+            'assignee' => ['nullable', 'string', 'max:36'],
+            'priority' => ['nullable', 'array'],
+            'priority.*' => ['string', 'max:10'],
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $board = $this->service->load($this->service->current());
+        $tasks = $this->tasks->query($request->user(), array_filter($filters))->limit(1000)->get();
+
+        return $this->success([
+            'board' => BoardResource::make($board),
+            'tasks' => TaskResource::collection($tasks),
+        ]);
     }
 
-    public function show(Board $board): JsonResponse
+    /**
+     * Apenas o quadro e suas colunas, sem tarefas.
+     */
+    public function config(): JsonResponse
     {
-        return $this->success(BoardResource::make($this->service->load($board)));
+        return $this->success(BoardResource::make($this->service->load($this->service->current())));
     }
 
-    public function store(StoreBoardRequest $request): JsonResponse
+    public function update(UpdateBoardRequest $request): JsonResponse
     {
-        return $this->created(BoardResource::make($this->service->create($request->validated())), 'Quadro criado.');
+        $board = $this->service->update($this->service->current(), $request->validated());
+
+        return $this->success(BoardResource::make($board), 'Quadro atualizado.');
     }
 
-    public function update(UpdateBoardRequest $request, Board $board): JsonResponse
+    public function storeColumn(StoreColumnRequest $request): JsonResponse
     {
-        return $this->success(BoardResource::make($this->service->update($board, $request->validated())), 'Quadro atualizado.');
+        $column = $this->service->addColumn($this->service->current(), $request->validated());
+
+        return $this->created(BoardColumnResource::make($column), 'Coluna criada.');
     }
 
-    public function destroy(Board $board): JsonResponse
-    {
-        $this->service->delete($board);
-
-        return $this->success(null, 'Quadro removido.');
-    }
-
-    public function storeColumn(StoreColumnRequest $request, Board $board): JsonResponse
-    {
-        return $this->created(BoardColumnResource::make($this->service->addColumn($board, $request->validated())), 'Coluna criada.');
-    }
-
-    public function updateColumn(UpdateColumnRequest $request, Board $board, BoardColumn $column): JsonResponse
+    public function updateColumn(UpdateColumnRequest $request, BoardColumn $column): JsonResponse
     {
         return $this->success(BoardColumnResource::make($this->service->updateColumn($column, $request->validated())), 'Coluna atualizada.');
     }
 
-    public function moveColumn(Request $request, Board $board, BoardColumn $column): JsonResponse
+    public function moveColumn(Request $request, BoardColumn $column): JsonResponse
     {
         $data = $request->validate(['position' => ['required', 'integer', 'min:0', 'max:100']]);
 
         return $this->success(BoardColumnResource::make($this->service->moveColumn($column, (int) $data['position'])));
     }
 
-    public function destroyColumn(Request $request, Board $board, BoardColumn $column): JsonResponse
+    public function destroyColumn(Request $request, BoardColumn $column): JsonResponse
     {
         $data = $request->validate(['move_tasks_to' => ['nullable', 'uuid']]);
 
         $target = filled($data['move_tasks_to'] ?? null)
-            ? $board->columns()->where('uuid', $data['move_tasks_to'])->first()
+            ? BoardColumn::query()->where('uuid', $data['move_tasks_to'])->first()
             : null;
 
         $this->service->deleteColumn($column, $target);

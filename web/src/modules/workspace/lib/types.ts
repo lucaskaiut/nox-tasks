@@ -47,7 +47,6 @@ export interface Board {
   name: string
   description: string | null
   columns?: BoardColumn[]
-  projects_count?: number
   created_at: string
   updated_at: string
 }
@@ -68,7 +67,6 @@ export interface Project {
   status: ProjectStatus
   status_label: string
   client?: Ref
-  board?: { id: string; name: string; columns: BoardColumn[] | null }
   members?: Member[]
   starts_at: string | null
   due_at: string | null

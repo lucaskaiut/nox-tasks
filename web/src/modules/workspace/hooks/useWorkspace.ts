@@ -69,9 +69,12 @@ export const useClients = (params: Record<string, unknown>, enabled = true) =>
 
 export const useClient = (id: string) => useQuery({ queryKey: wsKeys.client(id), queryFn: () => wsApi.clients.get(id) })
 
-export const useBoards = (enabled = true) => useQuery({ queryKey: wsKeys.boards, queryFn: () => wsApi.boards.list(), enabled })
+/** Quadro geral e suas colunas, sem tarefas. */
+export const useBoardConfig = (enabled = true) =>
+  useQuery({ queryKey: wsKeys.boardConfig, queryFn: wsApi.board.config, enabled, staleTime: 60_000 })
 
-export const useBoard = (id: string) => useQuery({ queryKey: wsKeys.board(id), queryFn: () => wsApi.boards.get(id) })
+export const useBoard = (params: Record<string, unknown> = {}) =>
+  useQuery({ queryKey: wsKeys.board(params), queryFn: () => wsApi.board.get(params), placeholderData: keepPreviousData })
 
 export const useUnreadCount = () =>
   useQuery({ queryKey: wsKeys.unread, queryFn: wsApi.notifications.unread, refetchInterval: 60_000 })

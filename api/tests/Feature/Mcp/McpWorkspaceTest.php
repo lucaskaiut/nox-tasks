@@ -32,7 +32,6 @@ use App\Modules\Mcp\Tools\Workspace\ListMembers;
 use App\Modules\Mcp\Tools\Workspace\WhoAmI;
 use App\Modules\Tenant\Support\CurrentTenant;
 use App\Modules\User\Models\User;
-use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Enums\Visibility;
 use App\Modules\Workspace\Models\Activity;
 use App\Modules\Workspace\Models\Task;
@@ -290,7 +289,9 @@ class McpWorkspaceTest extends TestCase
 
         $this->as($this->professional)->tool(CreateSubtask::class, ['task_id' => $task['id'], 'title' => 'Rascunho'])->assertOk();
 
-        $done = collect($project['board']['columns'])->firstWhere('kind', 'done')['id'];
+        $board = $this->data($this->as($this->professional)->tool(GetBoard::class, ['project_id' => $project['id']])->assertOk());
+        $this->assertSame([$task['id']], collect($board['columns'])->pluck('tasks')->flatten(1)->pluck('id')->all());
+        $done = collect($board['columns'])->firstWhere('kind', 'done')['id'];
         $moved = $this->data($this->as($this->professional)->tool(MoveTask::class, ['task_id' => $task['id'], 'column_id' => $done])->assertOk());
         $this->assertSame('done', $moved['status']['kind']);
 
@@ -325,7 +326,7 @@ class McpWorkspaceTest extends TestCase
 
         $this->as($this->professional)->tool(MoveTask::class, [
             'task_id' => $this->sharedTaskA->uuid,
-            'column_id' => $this->columnOf($this->projectB, ColumnKind::DONE),
+            'column_id' => '00000000-0000-4000-8000-000000000000',
         ])->assertHasErrors();
 
         $this->as($this->professional)->tool(AssignTask::class, [

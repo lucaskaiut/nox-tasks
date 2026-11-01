@@ -9,6 +9,7 @@ use App\Modules\Workspace\Http\Resources\ProjectResource;
 use App\Modules\Workspace\Http\Resources\SubtaskResource;
 use App\Modules\Workspace\Http\Resources\TaskCommentResource;
 use App\Modules\Workspace\Http\Resources\TaskResource;
+use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Services\ActivityService;
@@ -67,21 +68,23 @@ class WorkspaceSnapshots
     }
 
     /**
-     * Kanban do projeto: colunas em ordem com as tarefas visíveis de cada uma.
+     * Kanban do quadro geral: colunas em ordem com as tarefas visíveis de
+     * cada uma, opcionalmente restritas a um projeto.
      *
      * @return array<string, mixed>
      */
-    public function kanban(User $user, Project $project): array
+    public function kanban(User $user, Board $board, ?Project $project = null): array
     {
-        $project->loadMissing('board.columns');
+        $board->loadMissing('columns');
+        $filters = $project !== null ? ['project' => $project->uuid] : [];
         $tasks = collect($this->compactTasks(TaskResource::collection(
-            $this->tasks->query($user, ['project' => $project->uuid])->limit(self::MAX_TASKS)->get(),
+            $this->tasks->query($user, $filters)->limit(self::MAX_TASKS)->get(),
         )->resolve(request())));
 
         return [
-            'project' => ['id' => $project->uuid, 'name' => $project->name],
-            'board' => ['id' => $project->board->uuid, 'name' => $project->board->name],
-            'columns' => $project->board->columns->map(fn ($column) => [
+            'project' => $project !== null ? ['id' => $project->uuid, 'name' => $project->name] : null,
+            'board' => ['id' => $board->uuid, 'name' => $board->name],
+            'columns' => $board->columns->map(fn ($column) => [
                 ...BoardColumnResource::make($column)->resolve(request()),
                 'tasks' => $tasks->where('status_id', $column->uuid)->values()->all(),
             ])->all(),
@@ -133,6 +136,10 @@ class WorkspaceSnapshots
      */
     private function compactTasks(array $tasks): array
     {
+        // Recursos aninhados (status, projeto...) ainda não estão serializados:
+        // acessá-los como array leria atributos do model (ex.: id interno).
+        $tasks = json_decode(json_encode($tasks, JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
+
         return array_map(fn (array $task) => [
             'id' => $task['id'],
             'title' => $task['title'],

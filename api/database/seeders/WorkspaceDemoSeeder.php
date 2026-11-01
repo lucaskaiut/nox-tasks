@@ -7,7 +7,6 @@ use App\Modules\ACL\Models\Role;
 use App\Modules\Tenant\Models\Tenant;
 use App\Modules\Tenant\Support\CurrentTenant;
 use App\Modules\User\Models\User;
-use App\Modules\Workspace\Enums\ColumnKind;
 use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Services\BoardService;
 use App\Modules\Workspace\Services\ClientService;
@@ -42,6 +41,10 @@ class WorkspaceDemoSeeder extends Seeder
 
         $clients->createUser($acme, ['name' => 'Carlos (Acme)', 'email' => 'cliente@demo.localhost', 'password' => 'password']);
 
+        $board = app(BoardService::class)->current();
+        $board->update(['description' => 'Quadro único com as tarefas de todos os projetos.']);
+        app(BoardService::class)->addColumn($board, ['name' => 'Em revisão', 'color' => '#7c3aed', 'kind' => 'open', 'position' => 2]);
+
         $projects = app(ProjectService::class);
         $tasks = app(TaskService::class);
 
@@ -64,30 +67,32 @@ class WorkspaceDemoSeeder extends Seeder
             'member_ids' => [$professional->uuid],
         ]);
 
+        // [projeto, título, prioridade, visibilidade, coluna do quadro geral, prazo em dias]
         $seed = [
-            [$site, 'Definir arquitetura de informação', 'high', 'shared', ColumnKind::DONE, -10],
-            [$site, 'Layout da home', 'urgent', 'shared', ColumnKind::OPEN, 2],
-            [$site, 'Integração com CMS', 'high', 'internal', ColumnKind::OPEN, -1],
-            [$site, 'Aprovar textos institucionais', 'normal', 'shared', ColumnKind::WAITING, 5],
-            [$site, 'Configurar analytics', 'low', 'internal', ColumnKind::OPEN, 15],
-            [$app, 'Levantar itens do cardápio', 'normal', 'shared', ColumnKind::OPEN, 10],
-            [$app, 'Protótipo navegável', 'high', 'internal', ColumnKind::OPEN, 20],
+            [$site, 'Definir arquitetura de informação', 'high', 'shared', 'Concluído', -10],
+            [$site, 'Layout da home', 'urgent', 'shared', 'Em andamento', 2],
+            [$site, 'Integração com CMS', 'high', 'internal', 'Em andamento', -1],
+            [$site, 'Revisão do mapa do site', 'normal', 'internal', 'Em revisão', 3],
+            [$site, 'Aprovar textos institucionais', 'normal', 'shared', 'Aguardando retorno', 5],
+            [$site, 'Configurar analytics', 'low', 'internal', 'A fazer', 15],
+            [$app, 'Briefing inicial', 'normal', 'shared', 'Concluído', -5],
+            [$app, 'Levantar itens do cardápio', 'normal', 'shared', 'A fazer', 10],
+            [$app, 'Protótipo navegável', 'high', 'internal', 'A fazer', 20],
+            [$app, 'Fotos dos pratos', 'normal', 'shared', 'Aguardando retorno', 7],
         ];
 
-        foreach ($seed as [$project, $title, $priority, $visibility, $kind, $dueIn]) {
-            $task = $tasks->create($admin, $project, [
+        $columns = $board->columns()->get()->keyBy('name');
+
+        foreach ($seed as [$project, $title, $priority, $visibility, $column, $dueIn]) {
+            $tasks->create($admin, $project, [
                 'title' => $title,
                 'priority' => $priority,
                 'visibility' => $visibility,
+                'column_id' => $columns[$column]->uuid,
                 'due_at' => today()->addDays($dueIn)->toDateString(),
                 'assignee_id' => $professional->uuid,
-                'tags' => $visibility === 'internal' ? ['interno'] : ['site'],
+                'tags' => $visibility === 'internal' ? ['interno'] : [$project->is($site) ? 'site' : 'cardápio'],
             ]);
-
-            if ($kind !== ColumnKind::OPEN) {
-                $column = $project->board->columns()->where('kind', $kind->value)->first();
-                $tasks->move($admin, $task, $column->uuid);
-            }
         }
 
         $home = Task::query()->where('title', 'Layout da home')->first();
@@ -95,7 +100,5 @@ class WorkspaceDemoSeeder extends Seeder
         app(SubtaskService::class)->create($home, ['title' => 'Versão mobile']);
         app(CommentService::class)->create($admin, $home, 'Primeira versão enviada para aprovação.', 'shared');
         app(CommentService::class)->create($admin, $home, 'Atenção ao prazo da fonte licenciada.', 'internal');
-
-        app(BoardService::class)->create(['name' => 'Suporte contínuo']);
     }
 }

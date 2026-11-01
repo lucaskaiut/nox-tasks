@@ -6,24 +6,20 @@ use App\Modules\ACL\Enums\Permission;
 use App\Modules\Mcp\Support\WorkspaceSnapshots;
 use App\Modules\Mcp\Support\WorkspaceTool;
 use App\Modules\User\Models\User;
-use App\Modules\Workspace\Http\Resources\BoardResource;
-use App\Modules\Workspace\Services\BoardService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_board')]
-#[Description('Retorna um quadro e suas colunas. Informe project_id para obter o Kanban do projeto com as tarefas agrupadas por coluna, ou board_id para apenas a configuração do quadro.')]
+#[Description('Retorna o quadro Kanban geral (único, compartilhado por todos os projetos): colunas em ordem com as tarefas de cada uma. Informe project_id para ver apenas as tarefas de um projeto.')]
 #[IsReadOnly]
 class GetBoard extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
-            'board_id' => $schema->string()->format('uuid'),
             'project_id' => $schema->string()->format('uuid'),
         ];
     }
@@ -35,16 +31,11 @@ class GetBoard extends WorkspaceTool
 
     protected function run(Request $request, User $user): array
     {
-        $data = $request->validate(['board_id' => ['nullable', 'uuid'], 'project_id' => ['nullable', 'uuid']]);
+        $data = $request->validate(['project_id' => ['nullable', 'uuid']]);
+        $board = $this->authorizedBoard($user);
 
-        if (filled($data['project_id'] ?? null)) {
-            return app(WorkspaceSnapshots::class)->kanban($user, $this->authorizedProject($user, $data['project_id']));
-        }
+        $project = filled($data['project_id'] ?? null) ? $this->authorizedProject($user, $data['project_id']) : null;
 
-        if (! filled($data['board_id'] ?? null)) {
-            throw ValidationException::withMessages(['board_id' => ['Informe board_id ou project_id.']]);
-        }
-
-        return $this->item(BoardResource::class, app(BoardService::class)->load($this->authorizedBoard($user, $data['board_id'])));
+        return app(WorkspaceSnapshots::class)->kanban($user, $board, $project);
     }
 }
