@@ -8,7 +8,7 @@ import type { ApiError } from '@/shared/api/errors'
 import { Button, Field, Segmented, SelectInput, Sheet, TextArea, TextInput } from '../ui'
 import { PRIORITIES } from '../lib/format'
 import type { BoardColumn, Task } from '../lib/types'
-import { useMembers, useProfile, useWsMutation } from '../hooks/useWorkspace'
+import { useBoardConfig, useMembers, useProfile, useProjects, useWsMutation } from '../hooks/useWorkspace'
 import { wsApi } from '../services/workspace.api'
 import { MemberPicker } from './MemberPicker'
 import { nullIfEmpty, taskSchema, type TaskFormValues } from './schemas'
@@ -16,11 +16,15 @@ import { nullIfEmpty, taskSchema, type TaskFormValues } from './schemas'
 /**
  * Criação/edição de tarefa. Para clientes, só os campos permitidos aparecem
  * (o backend força visibilidade compartilhada e ignora atribuições).
+ *
+ * Sem projectId (ex.: Início, Tarefas), o formulário pede o projeto;
+ * defaultProjectId apenas pré-seleciona um.
  */
 export function TaskFormSheet({
   open,
   onClose,
   projectId,
+  defaultProjectId,
   task,
   columns,
   defaultColumnId,
@@ -28,6 +32,7 @@ export function TaskFormSheet({
   open: boolean
   onClose: () => void
   projectId?: string
+  defaultProjectId?: string
   task?: Task
   columns?: BoardColumn[]
   defaultColumnId?: string
@@ -35,6 +40,10 @@ export function TaskFormSheet({
   const { isClient, canManage } = useProfile()
   const canAssign = canManage(Permission.TASK_ASSIGN)
   const members = useMembers(open && canAssign)
+  const choosesProject = !task && !projectId
+  const projects = useProjects({ per_page: 100, archived: 'exclude' }, open && choosesProject)
+  const board = useBoardConfig(open && !task && !columns && !isClient)
+  const columnOptions = columns ?? board.data?.columns
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -54,18 +63,28 @@ export function TaskFormSheet({
             due_at: task.due_at ?? '',
             estimated_hours: task.estimated_hours?.toString() ?? '',
             tags: (task.tags ?? []).map((t) => t.name).join(', '),
+            project_id: task.project?.id ?? '',
             column_id: task.status?.id ?? '',
             assignee: task.assignee ? [task.assignee.id] : [],
             participants: (task.participants ?? []).map((p) => p.id),
           }
-        : { ...empty(), column_id: defaultColumnId ?? '' },
+        : { ...empty(), project_id: projectId ?? defaultProjectId ?? '', column_id: defaultColumnId ?? '' },
     )
-  }, [open, task, defaultColumnId, form])
+  }, [open, task, projectId, defaultProjectId, defaultColumnId, form])
 
-  const create = useWsMutation((body: Record<string, unknown>) => wsApi.tasks.create(projectId!, body), 'Tarefa criada')
+  const create = useWsMutation(
+    ({ project, body }: { project: string; body: Record<string, unknown> }) => wsApi.tasks.create(project, body),
+    'Tarefa criada',
+  )
   const update = useWsMutation((body: Record<string, unknown>) => wsApi.tasks.update(task!.id, body), 'Tarefa atualizada')
 
   const submit = form.handleSubmit(async (values) => {
+    const targetProject = projectId ?? values.project_id
+    if (!task && !targetProject) {
+      form.setError('project_id', { message: 'Selecione o projeto' })
+      return
+    }
+
     const tags = values.tags.split(',').map((t) => t.trim()).filter(Boolean)
     const common = {
       title: values.title,
@@ -88,10 +107,13 @@ export function TaskFormSheet({
         await update.mutateAsync(body)
       } else {
         await create.mutateAsync({
-          ...body,
-          ...(values.column_id ? { column_id: values.column_id } : {}),
-          ...(canAssign && values.assignee[0] ? { assignee_id: values.assignee[0] } : {}),
-          ...(canAssign && values.participants.length ? { participant_ids: values.participants } : {}),
+          project: targetProject,
+          body: {
+            ...body,
+            ...(values.column_id ? { column_id: values.column_id } : {}),
+            ...(canAssign && values.assignee[0] ? { assignee_id: values.assignee[0] } : {}),
+            ...(canAssign && values.participants.length ? { participant_ids: values.participants } : {}),
+          },
         })
       }
       onClose()
@@ -121,6 +143,18 @@ export function TaskFormSheet({
       }
     >
       <form onSubmit={submit} className="flex flex-col gap-4">
+        {choosesProject && (
+          <Field label="Projeto" htmlFor="t-project" error={errors.project_id?.message}>
+            <SelectInput id="t-project" {...form.register('project_id')} aria-invalid={!!errors.project_id}>
+              <option value="">Selecione…</option>
+              {projects.data?.data.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.client ? `${p.name} · ${p.client.name}` : p.name}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+        )}
         <Field label="Título" htmlFor="t-title" error={errors.title?.message}>
           <TextInput id="t-title" autoFocus {...form.register('title')} aria-invalid={!!errors.title} />
         </Field>
@@ -174,11 +208,11 @@ export function TaskFormSheet({
               </Field>
             </div>
 
-            {!task && columns && columns.length > 0 && (
+            {!task && columnOptions && columnOptions.length > 0 && (
               <Field label="Coluna inicial" htmlFor="t-col">
                 <SelectInput id="t-col" {...form.register('column_id')}>
                   <option value="">Padrão (primeira em aberto)</option>
-                  {columns.map((c) => (
+                  {columnOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -231,6 +265,7 @@ function empty(): TaskFormValues {
     due_at: '',
     estimated_hours: '',
     tags: '',
+    project_id: '',
     column_id: '',
     assignee: [],
     participants: [],

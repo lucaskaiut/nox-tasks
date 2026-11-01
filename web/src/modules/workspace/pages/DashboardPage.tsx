@@ -6,6 +6,7 @@ import { cn } from '@/shared/utils/cn'
 import { Button, ButtonLink, Empty, ErrorBlock, LoadingBlock, PageHeader, Panel, Stat } from '../ui'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { ProjectFormSheet } from '../components/ProjectForm'
+import { TaskFormSheet } from '../components/TaskForm'
 import { TaskRow } from '../components/TaskRow'
 import { useDashboard, useProfile, useProjects } from '../hooks/useWorkspace'
 import type { Dashboard } from '../lib/types'
@@ -73,10 +74,11 @@ function greeting(): string {
 }
 
 export default function DashboardPage() {
-  const { user, isClient, client, canManage } = useProfile()
+  const { user, isClient, client, canManage, can } = useProfile()
   const dashboard = useDashboard()
   const projects = useProjects({ per_page: 6, archived: 'exclude' })
   const [creating, setCreating] = useState(false)
+  const [creatingTask, setCreatingTask] = useState(false)
 
   if (dashboard.isLoading) return <LoadingBlock rows={8} />
   if (dashboard.isError || !dashboard.data) return <ErrorBlock message="Não foi possível carregar o painel." onRetry={() => dashboard.refetch()} />
@@ -98,11 +100,22 @@ export default function DashboardPage() {
               : 'Nenhuma tarefa atrasada. Bom ritmo.'
         }
         actions={
-          canManage(Permission.PROJECT_CREATE) && (
-            <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>
-              Novo projeto
-            </Button>
-          )
+          <>
+            {can(Permission.TASK_CREATE) && (
+              <Button
+                variant={canManage(Permission.PROJECT_CREATE) ? 'secondary' : 'primary'}
+                icon={<Plus className="size-3.5" />}
+                onClick={() => setCreatingTask(true)}
+              >
+                {isClient ? 'Nova solicitação' : 'Nova tarefa'}
+              </Button>
+            )}
+            {canManage(Permission.PROJECT_CREATE) && (
+              <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>
+                Novo projeto
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -184,6 +197,8 @@ export default function DashboardPage() {
       </div>
 
       <ProjectFormSheet open={creating} onClose={() => setCreating(false)} />
+
+      <TaskFormSheet open={creatingTask} onClose={() => setCreatingTask(false)} />
     </div>
   )
 }

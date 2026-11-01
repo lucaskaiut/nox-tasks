@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { ListChecks, Search } from 'lucide-react'
+import { ListChecks, Plus, Search } from 'lucide-react'
+import { Permission } from '@/shared/constants/permissions'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { cn } from '@/shared/utils/cn'
-import { Empty, ErrorBlock, LoadingBlock, PageHeader, SelectInput, TextInput } from '../ui'
+import { Button, Empty, ErrorBlock, LoadingBlock, PageHeader, SelectInput, TextInput } from '../ui'
+import { TaskFormSheet } from '../components/TaskForm'
 import { TaskRow, TaskTableHead } from '../components/TaskRow'
 import { useClients, useMembers, useProfile, useProjects, useTasks } from '../hooks/useWorkspace'
 import { PRIORITIES } from '../lib/format'
@@ -18,8 +20,9 @@ const STATES = [
 ]
 
 export default function TasksPage() {
-  const { isClient } = useProfile()
+  const { isClient, can } = useProfile()
   const [params, setParams] = useSearchParams()
+  const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState(params.get('search') ?? '')
   const debounced = useDebounce(search, 300)
   const state = params.get('state') ?? 'open'
@@ -60,7 +63,24 @@ export default function TasksPage() {
 
   return (
     <div className="ws-rise">
-      <PageHeader eyebrow={isClient ? 'Área do cliente' : 'Execução'} title="Tarefas" description="Filtre por projeto, cliente, responsável, prioridade e status." />
+      <PageHeader
+        eyebrow={isClient ? 'Área do cliente' : 'Execução'}
+        title="Tarefas"
+        description="Filtre por projeto, cliente, responsável, prioridade e status."
+        actions={
+          can(Permission.TASK_CREATE) && (
+            <Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setCreating(true)}>
+              {isClient ? 'Nova solicitação' : 'Nova tarefa'}
+            </Button>
+          )
+        }
+      />
+
+      <TaskFormSheet
+        open={creating}
+        onClose={() => setCreating(false)}
+        defaultProjectId={projects.data?.data.find((p) => p.id === filters.project && !p.is_archived)?.id}
+      />
 
       <div className="mb-3 flex flex-wrap items-center gap-1">
         {quick.map((item) => (

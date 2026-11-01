@@ -12,6 +12,7 @@ export const taskSchema = z
     due_at: optionalDate,
     estimated_hours: z.string().refine((v) => v === '' || (!Number.isNaN(Number(v)) && Number(v) >= 0), 'Valor inválido'),
     tags: z.string().max(400),
+    project_id: z.string(),
     column_id: z.string(),
     assignee: z.array(z.string()),
     participants: z.array(z.string()),

@@ -50,8 +50,8 @@ export const useDashboard = () => useQuery({ queryKey: wsKeys.dashboard, queryFn
 export const useMembers = (enabled = true) =>
   useQuery({ queryKey: wsKeys.members, queryFn: () => wsApi.members(), enabled, staleTime: 120_000 })
 
-export const useProjects = (params: Record<string, unknown>) =>
-  useQuery({ queryKey: wsKeys.projects(params), queryFn: () => wsApi.projects.list(params), placeholderData: keepPreviousData })
+export const useProjects = (params: Record<string, unknown>, enabled = true) =>
+  useQuery({ queryKey: wsKeys.projects(params), queryFn: () => wsApi.projects.list(params), placeholderData: keepPreviousData, enabled })
 
 export const useProject = (id: string) => useQuery({ queryKey: wsKeys.project(id), queryFn: () => wsApi.projects.get(id) })
 
