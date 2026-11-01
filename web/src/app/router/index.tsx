@@ -11,7 +11,6 @@ import { WorkspaceLayout } from '@/modules/workspace/layout/WorkspaceLayout'
 import { WsGuard } from '@/modules/workspace/layout/WsGuard'
 
 const LoginPage = lazy(() => import('@/modules/auth/pages/LoginPage'))
-const RegisterPage = lazy(() => import('@/modules/auth/pages/RegisterPage'))
 const PaymentPendingPage = lazy(() => import('@/modules/auth/pages/PaymentPendingPage'))
 const DashboardPage = lazy(() => import('@/modules/dashboard/pages/DashboardPage'))
 const UsersListPage = lazy(() => import('@/modules/users/pages/UsersListPage'))
@@ -60,7 +59,6 @@ export const router = createBrowserRouter([
         element: <AuthLayout />,
         children: [
           { path: '/auth/login', element: <LoginPage /> },
-          { path: '/auth/register', element: <RegisterPage /> },
         ],
       },
     ],
