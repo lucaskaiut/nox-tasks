@@ -26,24 +26,31 @@ return new class extends Migration
             }
         });
 
-        Schema::table('projects', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('board_id');
-        });
+        // Idempotente: no MySQL o DDL não é transacional, então uma execução
+        // interrompida pode ter aplicado só parte das alterações.
+        if (Schema::hasColumn('projects', 'board_id')) {
+            Schema::table('projects', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('board_id');
+            });
+        }
 
-        Schema::table('boards', function (Blueprint $table) {
-            $table->dropIndex(['tenant_id', 'name']);
-            $table->unique('tenant_id');
-        });
+        // O índice único precisa existir antes de remover o composto: no MySQL
+        // a FK de tenant_id exige sempre um índice que comece por essa coluna.
+        if (! Schema::hasIndex('boards', ['tenant_id'], 'unique')) {
+            Schema::table('boards', fn (Blueprint $table) => $table->unique('tenant_id'));
+        }
+
+        if (Schema::hasIndex('boards', ['tenant_id', 'name'])) {
+            Schema::table('boards', fn (Blueprint $table) => $table->dropIndex(['tenant_id', 'name']));
+        }
 
         $this->normalizeTaskPositions();
     }
 
     public function down(): void
     {
-        Schema::table('boards', function (Blueprint $table) {
-            $table->dropUnique(['tenant_id']);
-            $table->index(['tenant_id', 'name']);
-        });
+        Schema::table('boards', fn (Blueprint $table) => $table->index(['tenant_id', 'name']));
+        Schema::table('boards', fn (Blueprint $table) => $table->dropUnique(['tenant_id']));
 
         Schema::table('projects', function (Blueprint $table) {
             $table->foreignId('board_id')->nullable()->after('client_id')->constrained('boards')->restrictOnDelete();
