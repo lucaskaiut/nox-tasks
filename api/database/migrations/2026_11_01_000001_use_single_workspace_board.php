@@ -99,7 +99,7 @@ return new class extends Migration
                 ->orderBy('position')
                 ->orderBy('id')
                 ->pluck('id')
-                ->each(fn (int $id, int $index) => DB::table('tasks')->whereKey($id)->update(['position' => $index]));
+                ->each(fn (int $id, int $index) => DB::table('tasks')->where('id', $id)->update(['position' => $index]));
         });
     }
 };
