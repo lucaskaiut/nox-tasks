@@ -24,7 +24,9 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,6 +45,29 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
         $this->configurePolicies();
+        $this->configureUrls();
+        $this->configureOAuth();
+    }
+
+    /**
+     * Atrás de proxy/TLS terminado fora do PHP, garante URLs https geradas
+     * (metadados OAuth/MCP precisam anunciar o endereço público correto).
+     */
+    private function configureUrls(): void
+    {
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+    }
+
+    /**
+     * OAuth 2.1 (Passport) para conectores MCP remotos.
+     */
+    private function configureOAuth(): void
+    {
+        Passport::authorizationView('auth.oauth.authorize');
+        Passport::tokensExpireIn(now()->addDay());
+        Passport::refreshTokensExpireIn(now()->addDays(60));
     }
 
     private function configureRateLimiting(): void

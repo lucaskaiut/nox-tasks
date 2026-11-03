@@ -114,6 +114,16 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 5.1) Chaves OAuth do Passport (apenas se ausentes e não fornecidas via env)
+# ---------------------------------------------------------------------------
+if [ ! -f storage/oauth-private.key ] && [ -z "$(env_get PASSPORT_PRIVATE_KEY)" ]; then
+    log "Gerando chaves OAuth do Passport..."
+    php artisan passport:keys --no-interaction
+else
+    log "Chaves OAuth do Passport já existem - pulando"
+fi
+
+# ---------------------------------------------------------------------------
 # 6) Storage link (apenas se não existir)
 # ---------------------------------------------------------------------------
 if [ ! -e public/storage ]; then

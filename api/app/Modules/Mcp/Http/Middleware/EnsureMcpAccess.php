@@ -10,13 +10,16 @@ use App\Modules\Workspace\Enums\OperationSource;
 use App\Modules\Workspace\Support\OperationContext;
 use Closure;
 use Illuminate\Http\Request;
+use Laravel\Mcp\Server\Registrar;
+use Laravel\Passport\AccessToken as OAuthAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Exige um token pessoal (Sanctum) emitido exclusivamente para MCP (abilities
  * exatamente ["mcp"]; tokens de login com "*" são recusados) —
- * pertencente a um usuário com a permissão mcp.use. Sessões de navegador e
+ * pertencente a um usuário com a permissão mcp.use — ou um access token
+ * OAuth 2.1 (Passport, escopo mcp:use) de conector remoto. Sessões de navegador e
  * tokens de login comuns não abrem conexões MCP.
  */
 class EnsureMcpAccess
@@ -30,7 +33,7 @@ class EnsureMcpAccess
         $user = $request->user();
         $token = $user?->currentAccessToken();
 
-        if (! $user instanceof User || ! $token instanceof PersonalAccessToken || ! McpTokenService::isMcpToken($token)) {
+        if (! $user instanceof User || ! $this->isMcpToken($token)) {
             return ApiError::response('Token MCP inválido.', 401);
         }
 
@@ -41,5 +44,19 @@ class EnsureMcpAccess
         $this->context->set(OperationSource::MCP);
 
         return $next($request);
+    }
+
+    /**
+     * Token pessoal Sanctum com ability exatamente ["mcp"] ou access token
+     * OAuth (Passport) com o escopo "mcp:use" — emitido para conectores
+     * remotos (claude.ai) após login + consentimento do usuário.
+     */
+    private function isMcpToken(mixed $token): bool
+    {
+        if ($token instanceof PersonalAccessToken) {
+            return McpTokenService::isMcpToken($token);
+        }
+
+        return $token instanceof OAuthAccessToken && $token->can(Registrar::OAUTH_SCOPE);
     }
 }

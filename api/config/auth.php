@@ -42,6 +42,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // OAuth 2.1 (Passport): conectores MCP remotos (claude.ai, etc.).
+        // O model User mantém o trait do Sanctum; o guard do Passport só
+        // depende de withAccessToken(), que ele já provê.
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
 
     /*
