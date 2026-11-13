@@ -6,6 +6,7 @@ use App\Modules\User\Models\User;
 use App\Modules\Workspace\Enums\Visibility;
 use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Models\TaskAttachment;
+use App\Modules\Workspace\Models\TaskComment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -26,12 +27,21 @@ class AttachmentService
      */
     public function list(User $actor, Task $task): Collection
     {
-        return $task->attachments()->visibleTo($actor)->with('uploader:id,uuid,name')->latest()->get();
+        return $task->attachments()
+            ->visibleTo($actor)
+            ->with(['uploader:id,uuid,name', 'comment:id,uuid'])
+            ->latest()
+            ->latest('id')
+            ->get();
     }
 
-    public function store(User $actor, Task $task, UploadedFile $file, ?string $visibility = null): TaskAttachment
+    /**
+     * Anexos de comentário herdam a visibilidade do comentário.
+     */
+    public function store(User $actor, Task $task, UploadedFile $file, ?string $visibility = null, ?TaskComment $comment = null): TaskAttachment
     {
         $resolved = match (true) {
+            $comment !== null => $comment->visibility,
             $actor->isClientUser() => Visibility::SHARED,
             ! $task->isShared() => Visibility::INTERNAL,
             default => Visibility::tryFrom((string) $visibility) ?? Visibility::INTERNAL,
@@ -39,7 +49,7 @@ class AttachmentService
 
         $path = $file->store("attachments/{$task->tenant_id}/{$task->uuid}", self::DISK);
 
-        return DB::transaction(function () use ($actor, $task, $file, $path, $resolved): TaskAttachment {
+        return DB::transaction(function () use ($actor, $task, $file, $path, $resolved, $comment): TaskAttachment {
             $attachment = new TaskAttachment([
                 'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
             ]);
@@ -49,6 +59,7 @@ class AttachmentService
             $attachment->mime_type = $file->getMimeType();
             $attachment->size = (int) $file->getSize();
             $attachment->task()->associate($task);
+            $attachment->comment()->associate($comment);
             $attachment->uploader()->associate($actor);
             $attachment->save();
 
@@ -56,13 +67,28 @@ class AttachmentService
                 'file' => ['from' => null, 'to' => $attachment->original_name],
             ]);
 
-            return $attachment->load('uploader:id,uuid,name');
+            return $attachment->load(['uploader:id,uuid,name', 'comment:id,uuid']);
         });
     }
 
-    public function download(TaskAttachment $attachment): StreamedResponse
+    /**
+     * Imagens podem ser exibidas inline (miniaturas); os demais tipos são
+     * sempre baixados, evitando renderizar conteúdo arbitrário no navegador.
+     */
+    public function download(TaskAttachment $attachment, bool $inline = false): StreamedResponse
     {
-        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
+        $disk = Storage::disk($attachment->disk);
+        $headers = ['X-Content-Type-Options' => 'nosniff'];
+
+        if ($inline && $attachment->isImage()) {
+            return $disk->response($attachment->path, $attachment->original_name, [
+                ...$headers,
+                'Content-Type' => (string) $attachment->mime_type,
+                'Cache-Control' => 'private, max-age=86400',
+            ]);
+        }
+
+        return $disk->download($attachment->path, $attachment->original_name, $headers);
     }
 
     public function delete(TaskAttachment $attachment): void

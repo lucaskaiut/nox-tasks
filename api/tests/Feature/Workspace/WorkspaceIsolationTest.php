@@ -321,6 +321,78 @@ class WorkspaceIsolationTest extends TestCase
         $this->assertSame(['layout.pdf'], $names->all());
     }
 
+    public function test_comments_accept_files_that_inherit_comment_visibility(): void
+    {
+        Storage::fake('local');
+
+        Sanctum::actingAs($this->professional);
+        $this->post("/api/tasks/{$this->sharedTaskA->uuid}/comments", [
+            'body' => 'planilha de custos',
+            'visibility' => 'internal',
+            'files' => [UploadedFile::fake()->create('custos.xlsx', 10)],
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.attachments.0.name', 'custos.xlsx')
+            ->assertJsonPath('data.attachments.0.visibility', 'internal');
+
+        $this->post("/api/tasks/{$this->sharedTaskA->uuid}/comments", [
+            'visibility' => 'shared',
+            'files' => [UploadedFile::fake()->image('layout.png')],
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.body', '')
+            ->assertJsonPath('data.attachments.0.is_image', true)
+            ->assertJsonPath('data.attachments.0.visibility', 'shared');
+
+        // Sem texto e sem arquivos não é permitido.
+        $this->postJson("/api/tasks/{$this->sharedTaskA->uuid}/comments", ['body' => ''])
+            ->assertUnprocessable()->assertJsonValidationErrors('body');
+
+        Sanctum::actingAs($this->clientUserA);
+
+        $comments = collect($this->getJson("/api/tasks/{$this->sharedTaskA->uuid}/comments")->assertOk()->json('data'));
+        $this->assertSame(['layout.png'], $comments->pluck('attachments')->flatten(1)->pluck('name')->all());
+
+        $names = collect($this->getJson("/api/tasks/{$this->sharedTaskA->uuid}/attachments")->json('data'))->pluck('name');
+        $this->assertSame(['layout.png'], $names->all());
+    }
+
+    public function test_client_attaches_files_to_task_and_comments(): void
+    {
+        Storage::fake('local');
+
+        Sanctum::actingAs($this->clientUserA);
+
+        $image = $this->post("/api/tasks/{$this->sharedTaskA->uuid}/comments", [
+            'body' => 'segue o print do erro',
+            'visibility' => 'internal',
+            'files' => [UploadedFile::fake()->image('erro.png'), UploadedFile::fake()->create('log.txt', 2, 'text/plain')],
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.visibility', 'shared')
+            ->assertJsonCount(2, 'data.attachments')
+            ->json('data.attachments');
+
+        $this->post("/api/tasks/{$this->sharedTaskA->uuid}/attachments", [
+            'file' => UploadedFile::fake()->create('briefing.pdf', 10, 'application/pdf'),
+            'visibility' => 'internal',
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()->assertJsonPath('data.visibility', 'shared');
+
+        // Imagens podem ser exibidas inline; demais arquivos são sempre baixados.
+        $png = collect($image)->firstWhere('name', 'erro.png')['id'];
+        $txt = collect($image)->firstWhere('name', 'log.txt')['id'];
+        $this->get("/api/attachments/{$png}/download?inline=1")
+            ->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringStartsWith('attachment', (string) $this->get("/api/attachments/{$txt}/download?inline=1")->headers->get('Content-Disposition'));
+
+        // Cliente de outra empresa não anexa em tarefa alheia.
+        Sanctum::actingAs($this->clientUserB);
+        $this->post("/api/tasks/{$this->sharedTaskA->uuid}/comments", [
+            'files' => [UploadedFile::fake()->image('x.png')],
+        ], ['Accept' => 'application/json'])->assertNotFound();
+    }
+
     public function test_client_does_not_receive_professional_emails(): void
     {
         $this->sharedTaskA->forceFill(['assignee_id' => $this->professional->getKey()])->save();

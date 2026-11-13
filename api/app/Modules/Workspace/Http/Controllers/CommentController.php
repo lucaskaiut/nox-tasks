@@ -28,6 +28,7 @@ class CommentController extends ApiController
             $task,
             $request->validated('body'),
             $request->validated('visibility'),
+            $request->file('files', []),
         );
 
         return $this->created(TaskCommentResource::make($comment), 'Comentário adicionado.');

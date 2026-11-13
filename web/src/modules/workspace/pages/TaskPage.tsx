@@ -1,18 +1,20 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Bot, Download, Eye, Lock, Paperclip, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Bot, Eye, Lock, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Permission } from '@/shared/constants/permissions'
 import { cn } from '@/shared/utils/cn'
 import { Bar, Button, Confirm, ErrorBlock, IconButton, Initials, LoadingBlock, Panel, Pill, Segmented, SelectInput, TextArea, TextInput } from '../ui'
 import { ActivityFeed } from '../components/ActivityFeed'
+import { AttachButton, AttachmentList, PendingFiles } from '../components/Attachments'
+import { acceptFiles } from '../lib/attachments'
 import { MemberPicker } from '../components/MemberPicker'
 import { TaskFormSheet } from '../components/TaskForm'
 import { DueMark, PriorityMark, Tags, VisibilityMark } from '../components/TaskBits'
 import { wsKeys } from '../hooks/keys'
 import { useBoardConfig, useMembers, useProfile, useTask, useWsMutation } from '../hooks/useWorkspace'
-import { dateTime, fileSize, longDate, PRIORITIES, relative } from '../lib/format'
-import type { Subtask, Task } from '../lib/types'
+import { dateTime, longDate, PRIORITIES, relative } from '../lib/format'
+import type { Attachment, Subtask, Task } from '../lib/types'
 import { wsApi } from '../services/workspace.api'
 
 function Meta({ label, children }: { label: string; children: React.ReactNode }) {
@@ -85,12 +87,27 @@ function SubtaskList({ task, editable }: { task: Task; editable: boolean }) {
   )
 }
 
+/** Remoção de anexo: o próprio autor do upload ou um profissional (mesma regra da Policy). */
+function useRemoveAttachment() {
+  const { user, canManage } = useProfile()
+  const remove = useWsMutation((id: string) => wsApi.tasks.removeAttachment(id), 'Anexo removido')
+
+  return {
+    canRemove: (file: Attachment) => canManage(Permission.TASK_UPDATE) || (Boolean(user) && file.uploader?.id === user?.id),
+    onRemove: (file: Attachment) => remove.mutate(file.id),
+  }
+}
+
 function Comments({ task }: { task: Task }) {
   const { isClient, can } = useProfile()
   const [body, setBody] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [dragging, setDragging] = useState(false)
   const [visibility, setVisibility] = useState<'internal' | 'shared'>(task.visibility === 'shared' ? 'shared' : 'internal')
   const comments = useQuery({ queryKey: wsKeys.taskComments(task.id), queryFn: () => wsApi.tasks.comments(task.id) })
-  const create = useWsMutation((payload: { body: string; visibility?: string }) => wsApi.tasks.comment(task.id, payload))
+  const create = useWsMutation((payload: { body: string; visibility?: string; files?: File[] }) => wsApi.tasks.comment(task.id, payload))
+  const removal = useRemoveAttachment()
+  const addFiles = (incoming: Iterable<File>) => setFiles((current) => [...current, ...acceptFiles(incoming)].slice(0, 10))
 
   return (
     <Panel eyebrow="Conversa" title="Comentários">
@@ -116,9 +133,16 @@ function Comments({ task }: { task: Task }) {
                   {relative(comment.created_at)}
                 </span>
               </p>
-              <p className={cn('mt-1 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ws-ink', comment.visibility === 'internal' && !isClient && 'rounded-ws-sm bg-ws-sunken px-2.5 py-1.5')}>
-                {comment.body}
-              </p>
+              {comment.body && (
+                <p className={cn('mt-1 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ws-ink', comment.visibility === 'internal' && !isClient && 'rounded-ws-sm bg-ws-sunken px-2.5 py-1.5')}>
+                  {comment.body}
+                </p>
+              )}
+              {comment.attachments && comment.attachments.length > 0 && (
+                <div className="mt-2">
+                  <AttachmentList compact attachments={comment.attachments} {...removal} />
+                </div>
+              )}
             </div>
           </li>
         ))}
@@ -127,15 +151,46 @@ function Comments({ task }: { task: Task }) {
 
       {can(Permission.COMMENT_CREATE) && (
         <form
-          className="mt-5 rounded-ws bg-ws-sunken p-3"
+          className={cn('mt-5 rounded-ws bg-ws-sunken p-3', dragging && 'ring-2 ring-[var(--ws-accent)]')}
+          onDragOver={(event) => {
+            if (!event.dataTransfer.types.includes('Files')) return
+            event.preventDefault()
+            setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            if (!event.dataTransfer.files.length) return
+            event.preventDefault()
+            setDragging(false)
+            addFiles(event.dataTransfer.files)
+          }}
           onSubmit={async (event) => {
             event.preventDefault()
-            if (!body.trim()) return
-            await create.mutateAsync({ body: body.trim(), ...(isClient ? {} : { visibility }) })
+            if (!body.trim() && !files.length) return
+            await create.mutateAsync({ body: body.trim(), files, ...(isClient ? {} : { visibility }) })
             setBody('')
+            setFiles([])
           }}
         >
-          <TextArea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder={isClient ? 'Escreva uma mensagem para a equipe…' : 'Escreva um comentário…'} aria-label="Comentário" />
+          <TextArea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onPaste={(e) => {
+              const pasted = Array.from(e.clipboardData.files)
+              if (pasted.length) {
+                e.preventDefault()
+                addFiles(pasted)
+              }
+            }}
+            rows={3}
+            placeholder={isClient ? 'Escreva uma mensagem para a equipe… (arraste ou cole imagens aqui)' : 'Escreva um comentário… (arraste ou cole imagens aqui)'}
+            aria-label="Comentário"
+          />
+          {files.length > 0 && (
+            <div className="mt-2">
+              <PendingFiles files={files} onRemove={(index) => setFiles((current) => current.filter((_, i) => i !== index))} />
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             {!isClient && task.visibility === 'shared' ? (
               <Segmented
@@ -150,9 +205,12 @@ function Comments({ task }: { task: Task }) {
             ) : (
               <span className="text-[12px] text-ws-ink-3">{isClient ? 'Visível para a equipe do projeto.' : 'Tarefa interna: comentários ficam só com a equipe.'}</span>
             )}
-            <Button type="submit" variant="primary" size="sm" loading={create.isPending}>
-              Comentar
-            </Button>
+            <div className="flex items-center gap-1">
+              <AttachButton onFiles={addFiles} disabled={create.isPending || files.length >= 10} />
+              <Button type="submit" variant="primary" size="sm" loading={create.isPending}>
+                Comentar
+              </Button>
+            </div>
           </div>
         </form>
       )}
@@ -162,56 +220,20 @@ function Comments({ task }: { task: Task }) {
 
 function Attachments({ task }: { task: Task }) {
   const { isClient, can } = useProfile()
-  const input = useRef<HTMLInputElement>(null)
   const attachments = useQuery({ queryKey: wsKeys.taskAttachments(task.id), queryFn: () => wsApi.tasks.attachments(task.id) })
-  const upload = useWsMutation((file: File) => wsApi.tasks.upload(task.id, file, task.visibility === 'shared' && !isClient ? 'shared' : undefined), 'Arquivo anexado')
-  const remove = useWsMutation((id: string) => wsApi.tasks.removeAttachment(id))
+  const upload = useWsMutation(async (files: File[]) => {
+    for (const file of files) await wsApi.tasks.upload(task.id, file, task.visibility === 'shared' && !isClient ? 'shared' : undefined)
+  }, 'Arquivo anexado')
+  const removal = useRemoveAttachment()
 
   return (
     <Panel
       eyebrow="Arquivos"
       title="Anexos"
-      actions={
-        can(Permission.COMMENT_CREATE) && (
-          <>
-            <input
-              ref={input}
-              type="file"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) upload.mutate(file)
-                e.target.value = ''
-              }}
-            />
-            <Button size="sm" variant="ghost" loading={upload.isPending} icon={<Paperclip className="size-3.5" />} onClick={() => input.current?.click()}>
-              Anexar
-            </Button>
-          </>
-        )
-      }
+      actions={can(Permission.COMMENT_CREATE) && <AttachButton onFiles={(files) => upload.mutate(files)} loading={upload.isPending} />}
     >
       {attachments.data?.length ? (
-        <ul className="flex flex-col">
-          {attachments.data.map((file) => (
-            <li key={file.id} className="flex items-center gap-2 py-2 text-[13px]">
-              <Paperclip className="size-3.5 text-ws-ink-3" aria-hidden="true" />
-              <a href={wsApi.tasks.downloadUrl(file.id)} className="min-w-0 flex-1 truncate text-ws-ink hover:underline">
-                {file.name}
-              </a>
-              {!isClient && file.visibility === 'internal' && <Lock className="size-3 text-ws-ink-3" aria-label="Interno" />}
-              <span className="tabular-nums text-[11px] text-ws-ink-3">{fileSize(file.size)}</span>
-              <a href={wsApi.tasks.downloadUrl(file.id)} aria-label={`Baixar ${file.name}`} className="text-ws-ink-3 hover:text-ws-ink">
-                <Download className="size-3.5" />
-              </a>
-              {!isClient && (
-                <IconButton label="Remover anexo" className="size-6" onClick={() => remove.mutate(file.id)}>
-                  <X className="size-3.5" />
-                </IconButton>
-              )}
-            </li>
-          ))}
-        </ul>
+        <AttachmentList attachments={attachments.data} showVisibility={!isClient} {...removal} />
       ) : (
         <p className="text-[13px] text-ws-ink-3">Nenhum arquivo anexado.</p>
       )}

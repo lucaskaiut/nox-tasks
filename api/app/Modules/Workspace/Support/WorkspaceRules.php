@@ -227,8 +227,23 @@ final class WorkspaceRules
     public static function comment(): array
     {
         return [
-            'body' => ['required', 'string', 'max:10000'],
+            'body' => ['required_without:files', 'nullable', 'string', 'max:10000'],
             'visibility' => ['sometimes', 'nullable', Rule::enum(Visibility::class)],
+            'files' => ['sometimes', 'array', 'max:10'],
+            'files.*' => self::file(),
+        ];
+    }
+
+    /**
+     * Arquivo anexável a tarefas e comentários (até 20 MB).
+     *
+     * @return list<string>
+     */
+    public static function file(): array
+    {
+        return [
+            'required', 'file', 'max:20480',
+            'mimes:pdf,png,jpg,jpeg,gif,webp,txt,csv,doc,docx,xls,xlsx,ppt,pptx,zip,md,json',
         ];
     }
 
@@ -238,10 +253,7 @@ final class WorkspaceRules
     public static function attachment(): array
     {
         return [
-            'file' => [
-                'required', 'file', 'max:20480',
-                'mimes:pdf,png,jpg,jpeg,gif,webp,txt,csv,doc,docx,xls,xlsx,ppt,pptx,zip,md,json',
-            ],
+            'file' => self::file(),
             'visibility' => ['sometimes', 'nullable', Rule::enum(Visibility::class)],
         ];
     }

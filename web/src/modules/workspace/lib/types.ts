@@ -126,6 +126,7 @@ export interface Comment {
   body: string
   visibility: Visibility
   source: 'ui' | 'api' | 'mcp'
+  attachments?: Attachment[]
   author?: Member | null
   created_at: string
 }
@@ -136,6 +137,8 @@ export interface Attachment {
   mime_type: string | null
   size: number
   visibility: Visibility
+  is_image: boolean
+  comment_id?: string | null
   uploader?: Member | null
   created_at: string
 }

@@ -34,7 +34,8 @@ class CreateTaskComment extends WorkspaceTool
     protected function run(Request $request, User $user): array
     {
         $task = $this->authorizedTask($user, $request->get('task_id'), 'comment');
-        $data = $request->validate(WorkspaceRules::comment());
+        // Via MCP não há upload de arquivos: o texto é obrigatório.
+        $data = $request->validate([...WorkspaceRules::comment(), 'body' => ['required', 'string', 'max:10000']]);
 
         return $this->item(TaskCommentResource::class, app(CommentService::class)->create($user, $task, $data['body'], $data['visibility'] ?? null));
     }

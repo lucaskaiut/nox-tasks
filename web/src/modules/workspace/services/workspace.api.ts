@@ -74,7 +74,16 @@ export const wsApi = {
     move: (id: string, body: { column_id: string; position?: number; after_id?: string | null }) => send<Task>('post', `/tasks/${id}/move`, body),
     activity: (id: string, params?: Params) => page<Activity>(`/tasks/${id}/activity`, params),
     comments: (id: string) => page<Comment>(`/tasks/${id}/comments`, { per_page: 100 }),
-    comment: (id: string, body: { body: string; visibility?: string }) => send<Comment>('post', `/tasks/${id}/comments`, body),
+    comment: (id: string, body: { body: string; visibility?: string; files?: File[] }) => {
+      if (!body.files?.length) return send<Comment>('post', `/tasks/${id}/comments`, { body: body.body, visibility: body.visibility })
+
+      const form = new FormData()
+      if (body.body) form.append('body', body.body)
+      if (body.visibility) form.append('visibility', body.visibility)
+      body.files.forEach((file) => form.append('files[]', file))
+
+      return send<Comment>('post', `/tasks/${id}/comments`, form)
+    },
     subtasks: {
       create: (taskId: string, body: Params) => send<Subtask>('post', `/tasks/${taskId}/subtasks`, body),
       update: (taskId: string, id: string, body: Params) => send<Subtask>('patch', `/tasks/${taskId}/subtasks/${id}`, body),
@@ -90,6 +99,8 @@ export const wsApi = {
     },
     removeAttachment: (id: string) => send<null>('delete', `/attachments/${id}`),
     downloadUrl: (id: string) => `${http.defaults.baseURL}/attachments/${id}/download`,
+    /** Exibição inline (apenas imagens; demais tipos continuam sendo baixados). */
+    inlineUrl: (id: string) => `${http.defaults.baseURL}/attachments/${id}/download?inline=1`,
   },
 
   /** Quadro Kanban geral (único) — tarefas de todos os projetos. */

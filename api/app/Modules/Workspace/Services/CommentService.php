@@ -8,6 +8,7 @@ use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Models\TaskComment;
 use App\Modules\Workspace\Support\OperationContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class CommentService
@@ -17,13 +18,14 @@ class CommentService
         private readonly WorkspaceNotifier $notifier,
         private readonly TaskService $tasks,
         private readonly OperationContext $context,
+        private readonly AttachmentService $attachments,
     ) {}
 
     public function paginate(User $actor, Task $task, int $perPage = 30): LengthAwarePaginator
     {
         return $task->comments()
             ->visibleTo($actor)
-            ->with('author:id,uuid,name,client_id')
+            ->with(['author:id,uuid,name,client_id', 'attachments.uploader:id,uuid,name'])
             ->orderBy('created_at')
             ->orderBy('id')
             ->paginate(min(max($perPage, 1), 100));
@@ -31,18 +33,21 @@ class CommentService
 
     /**
      * Comentários de clientes são sempre compartilhados; comentários em
-     * tarefas internas são sempre internos.
+     * tarefas internas são sempre internos. Arquivos enviados junto com o
+     * comentário herdam sua visibilidade.
+     *
+     * @param  array<int, UploadedFile>  $files
      */
-    public function create(User $actor, Task $task, string $body, ?string $visibility = null): TaskComment
+    public function create(User $actor, Task $task, ?string $body, ?string $visibility = null, array $files = []): TaskComment
     {
-        return DB::transaction(function () use ($actor, $task, $body, $visibility): TaskComment {
+        return DB::transaction(function () use ($actor, $task, $body, $visibility, $files): TaskComment {
             $resolved = match (true) {
                 $actor->isClientUser() => Visibility::SHARED,
                 ! $task->isShared() => Visibility::INTERNAL,
                 default => Visibility::tryFrom((string) $visibility) ?? Visibility::INTERNAL,
             };
 
-            $comment = new TaskComment(['body' => $body]);
+            $comment = new TaskComment(['body' => trim((string) $body)]);
             $comment->visibility = $resolved;
             $comment->source = $this->context->source();
             $comment->task()->associate($task);
@@ -50,6 +55,10 @@ class CommentService
             $comment->save();
 
             $this->activity->record('comment.created', $comment, $resolved, task: $task);
+
+            foreach ($files as $file) {
+                $this->attachments->store($actor, $task, $file, comment: $comment);
+            }
 
             $this->notifier->aboutTask(
                 $task,
@@ -61,7 +70,7 @@ class CommentService
                 internal: $resolved === Visibility::INTERNAL,
             );
 
-            return $comment->load('author:id,uuid,name,client_id');
+            return $comment->load(['author:id,uuid,name,client_id', 'attachments.uploader:id,uuid,name']);
         });
     }
 }

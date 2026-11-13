@@ -22,6 +22,8 @@ class TaskAttachmentResource extends JsonResource
             'mime_type' => $this->mime_type,
             'size' => $this->size,
             'visibility' => $this->visibility?->value,
+            'is_image' => $this->isImage(),
+            'comment_id' => $this->whenLoaded('comment', fn () => $this->comment?->uuid),
             'uploader' => MemberResource::make($this->whenLoaded('uploader')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

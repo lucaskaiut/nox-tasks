@@ -38,6 +38,16 @@ class TaskAttachment extends Model
         return $this->belongsTo(Task::class);
     }
 
+    public function comment(): BelongsTo
+    {
+        return $this->belongsTo(TaskComment::class, 'comment_id');
+    }
+
+    public function isImage(): bool
+    {
+        return in_array($this->mime_type, ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], true);
+    }
+
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id')->withTrashed();

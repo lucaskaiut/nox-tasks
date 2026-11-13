@@ -10,6 +10,7 @@ use App\Modules\Workspace\Enums\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaskComment extends Model
 {
@@ -32,6 +33,11 @@ class TaskComment extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TaskAttachment::class, 'comment_id');
     }
 
     public function author(): BelongsTo

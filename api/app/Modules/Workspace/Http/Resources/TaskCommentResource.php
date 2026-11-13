@@ -21,6 +21,7 @@ class TaskCommentResource extends JsonResource
             'body' => $this->body,
             'visibility' => $this->visibility?->value,
             'source' => $this->source?->value,
+            'attachments' => TaskAttachmentResource::collection($this->whenLoaded('attachments')),
             'author' => MemberResource::make($this->whenLoaded('author')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

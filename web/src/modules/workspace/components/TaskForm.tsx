@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, Lock } from 'lucide-react'
@@ -8,8 +8,10 @@ import type { ApiError } from '@/shared/api/errors'
 import { Button, Field, Segmented, SelectInput, Sheet, TextArea, TextInput } from '../ui'
 import { PRIORITIES } from '../lib/format'
 import type { BoardColumn, Task } from '../lib/types'
-import { useBoardConfig, useMembers, useProfile, useProjects, useWsMutation } from '../hooks/useWorkspace'
+import { useBoardConfig, useInvalidateWs, useMembers, useProfile, useProjects, useWsMutation } from '../hooks/useWorkspace'
 import { wsApi } from '../services/workspace.api'
+import { toast } from '@/shared/stores/toast.store'
+import { AttachButton, PendingFiles } from './Attachments'
 import { MemberPicker } from './MemberPicker'
 import { nullIfEmpty, taskSchema, type TaskFormValues } from './schemas'
 
@@ -45,6 +47,9 @@ export function TaskFormSheet({
   const board = useBoardConfig(open && !task && !columns && !isClient)
   const columnOptions = columns ?? board.data?.columns
 
+  const [files, setFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: empty(),
@@ -52,6 +57,7 @@ export function TaskFormSheet({
 
   useEffect(() => {
     if (!open) return
+    setFiles([])
     form.reset(
       task
         ? {
@@ -77,6 +83,7 @@ export function TaskFormSheet({
     'Tarefa criada',
   )
   const update = useWsMutation((body: Record<string, unknown>) => wsApi.tasks.update(task!.id, body), 'Tarefa atualizada')
+  const invalidate = useInvalidateWs()
 
   const submit = form.handleSubmit(async (values) => {
     const targetProject = projectId ?? values.project_id
@@ -102,11 +109,12 @@ export function TaskFormSheet({
           tags,
         }
 
+    let saved: Task
     try {
       if (task) {
-        await update.mutateAsync(body)
+        saved = await update.mutateAsync(body)
       } else {
-        await create.mutateAsync({
+        saved = await create.mutateAsync({
           project: targetProject,
           body: {
             ...body,
@@ -116,14 +124,32 @@ export function TaskFormSheet({
           },
         })
       }
-      onClose()
     } catch (error) {
       applyApiErrorsToForm(form, error as ApiError)
+      return
     }
+
+    // Anexos são enviados após salvar; falhas não desfazem a tarefa.
+    if (files.length) {
+      setUploading(true)
+      const visibility = !isClient && saved.visibility === 'shared' ? 'shared' : undefined
+      const failed: string[] = []
+      for (const file of files) {
+        try {
+          await wsApi.tasks.upload(saved.id, file, visibility)
+        } catch {
+          failed.push(file.name)
+        }
+      }
+      setUploading(false)
+      invalidate()
+      if (failed.length) toast.error('Alguns arquivos não foram anexados', failed.join(', '))
+    }
+    onClose()
   })
 
   const errors = form.formState.errors
-  const busy = create.isPending || update.isPending
+  const busy = create.isPending || update.isPending || uploading
 
   return (
     <Sheet
@@ -160,6 +186,17 @@ export function TaskFormSheet({
         </Field>
         <Field label="Descrição" htmlFor="t-desc" error={errors.description?.message}>
           <TextArea id="t-desc" rows={6} {...form.register('description')} placeholder="Contexto, critérios de aceite, links…" />
+        </Field>
+
+        <Field label="Anexos" hint={task ? 'Novos arquivos são adicionados aos anexos da tarefa.' : 'Imagens e arquivos de até 20 MB.'}>
+          <div className="flex flex-col items-start gap-2">
+            <PendingFiles files={files} onRemove={(index) => setFiles((current) => current.filter((_, i) => i !== index))} />
+            <AttachButton
+              label={files.length ? 'Adicionar mais' : 'Anexar arquivos'}
+              onFiles={(incoming) => setFiles((current) => [...current, ...incoming])}
+              disabled={busy}
+            />
+          </div>
         </Field>
 
         {!isClient && (

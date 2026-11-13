@@ -33,9 +33,9 @@ class AttachmentController extends ApiController
         return $this->created(TaskAttachmentResource::make($attachment), 'Arquivo anexado.');
     }
 
-    public function download(TaskAttachment $attachment): StreamedResponse
+    public function download(Request $request, TaskAttachment $attachment): StreamedResponse
     {
-        return $this->service->download($attachment);
+        return $this->service->download($attachment, $request->boolean('inline'));
     }
 
     public function destroy(TaskAttachment $attachment): JsonResponse
