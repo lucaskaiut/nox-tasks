@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list_task_comments')]
-#[Description('Lista comentários de uma tarefa em ordem cronológica. Usuários de cliente veem apenas comentários compartilhados.')]
+#[Description('Lista comentários de uma tarefa em ordem cronológica. Usuários de cliente veem apenas comentários compartilhados. Arquivos enviados em cada comentário aparecem em attachments; leia o conteúdo com read_task_attachment.')]
 #[IsReadOnly]
 class ListTaskComments extends WorkspaceTool
 {

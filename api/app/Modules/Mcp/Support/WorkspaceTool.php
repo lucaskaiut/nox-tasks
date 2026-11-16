@@ -38,9 +38,12 @@ abstract class WorkspaceTool extends Tool
     public const MAX_RESPONSE_BYTES = 200_000;
 
     /**
-     * @return array<string, mixed>
+     * Dados estruturados (array) ou, para conteúdo não-JSON como imagens,
+     * uma resposta MCP pronta.
+     *
+     * @return array<string, mixed>|Response|ResponseFactory
      */
-    abstract protected function run(Request $request, User $user): array;
+    abstract protected function run(Request $request, User $user): array|Response|ResponseFactory;
 
     /**
      * Ferramenta listada apenas a quem pode utilizá-la (a autorização real
@@ -76,6 +79,13 @@ abstract class WorkspaceTool extends Tool
 
         try {
             $result = $this->run($request, $user);
+
+            if (! is_array($result)) {
+                $outcome = 'ok';
+
+                return $result;
+            }
+
             $json = json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
             if ($json === false || strlen($json) > self::MAX_RESPONSE_BYTES) {

@@ -7,12 +7,14 @@ use App\Modules\Workspace\Http\Resources\ActivityResource;
 use App\Modules\Workspace\Http\Resources\BoardColumnResource;
 use App\Modules\Workspace\Http\Resources\ProjectResource;
 use App\Modules\Workspace\Http\Resources\SubtaskResource;
+use App\Modules\Workspace\Http\Resources\TaskAttachmentResource;
 use App\Modules\Workspace\Http\Resources\TaskCommentResource;
 use App\Modules\Workspace\Http\Resources\TaskResource;
 use App\Modules\Workspace\Models\Board;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Models\Task;
 use App\Modules\Workspace\Services\ActivityService;
+use App\Modules\Workspace\Services\AttachmentService;
 use App\Modules\Workspace\Services\CommentService;
 use App\Modules\Workspace\Services\ProjectService;
 use App\Modules\Workspace\Services\TaskService;
@@ -30,6 +32,7 @@ class WorkspaceSnapshots
         private readonly TaskService $tasks,
         private readonly ActivityService $activity,
         private readonly CommentService $comments,
+        private readonly AttachmentService $attachments,
     ) {}
 
     /**
@@ -58,6 +61,7 @@ class WorkspaceSnapshots
         return [
             'task' => TaskResource::make($task)->resolve(request()),
             'subtasks' => SubtaskResource::collection($task->subtasks)->resolve(request()),
+            'attachments' => TaskAttachmentResource::collection($this->attachments->list($user, $task))->resolve(request()),
             'comments' => TaskCommentResource::collection(
                 $this->comments->paginate($user, $task, 20)->getCollection(),
             )->resolve(request()),

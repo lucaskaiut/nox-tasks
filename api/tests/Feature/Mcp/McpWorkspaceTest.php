@@ -9,6 +9,8 @@ use App\Modules\Mcp\Prompts\ProjectProgressPrompt;
 use App\Modules\Mcp\Resources\ProjectContextResource;
 use App\Modules\Mcp\Resources\TaskSummaryResource;
 use App\Modules\Mcp\Servers\WorkspaceServer;
+use App\Modules\Mcp\Tools\Attachments\ListTaskAttachments;
+use App\Modules\Mcp\Tools\Attachments\ReadTaskAttachment;
 use App\Modules\Mcp\Tools\Boards\CreateBoardColumn;
 use App\Modules\Mcp\Tools\Boards\GetBoard;
 use App\Modules\Mcp\Tools\Clients\ListClients;
@@ -36,11 +38,14 @@ use App\Modules\Workspace\Enums\Visibility;
 use App\Modules\Workspace\Models\Activity;
 use App\Modules\Workspace\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\InteractsWithWorkspace;
 use Tests\TestCase;
+use ZipArchive;
 
 class McpWorkspaceTest extends TestCase
 {
@@ -101,6 +106,32 @@ class McpWorkspaceTest extends TestCase
             ->assertHasErrors(['Contexto de tenant não resolvido.']);
     }
 
+    /**
+     * Conteúdo bruto (lista de blocos) da resposta de uma tool.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function content(TestResponse $response): array
+    {
+        return (fn () => $this->response->toArray()['result']['content'] ?? [])->call($response);
+    }
+
+    /**
+     * Anexa um arquivo pela API HTTP (à tarefa ou, com $comment, a um novo comentário).
+     */
+    private function attach(User $user, Task $task, UploadedFile $file, string $visibility = 'shared', bool $comment = false): string
+    {
+        Sanctum::actingAs($user);
+
+        if ($comment) {
+            return $this->post("/api/tasks/{$task->uuid}/comments", ['body' => 'segue arquivo', 'visibility' => $visibility, 'files' => [$file]], ['Accept' => 'application/json'])
+                ->assertCreated()->json('data.attachments.0.id');
+        }
+
+        return $this->post("/api/tasks/{$task->uuid}/attachments", ['file' => $file, 'visibility' => $visibility], ['Accept' => 'application/json'])
+            ->assertCreated()->json('data.id');
+    }
+
     // --- Disponibilidade das tools por perfil ---------------------------------------
 
     public function test_tool_catalog_follows_profile_and_permissions(): void
@@ -108,7 +139,7 @@ class McpWorkspaceTest extends TestCase
         $admin = [ListClients::class, CreateProject::class, UpdateTask::class, DeleteTask::class, MoveTask::class,
             AssignTask::class, CreateBoardColumn::class, CreateSubtask::class, ListMembers::class];
         $shared = [WhoAmI::class, ListProjects::class, GetProject::class, ListTasks::class, GetTask::class, CreateTask::class,
-            ListSubtasks::class, ListTaskComments::class, CreateTaskComment::class, ListTaskActivity::class, GetBoard::class, GetDashboard::class];
+            ListSubtasks::class, ListTaskComments::class, CreateTaskComment::class, ListTaskAttachments::class, ReadTaskAttachment::class, ListTaskActivity::class, GetBoard::class, GetDashboard::class];
 
         $this->as($this->professional)->tools()->assertRegistered([...$admin, ...$shared]);
 
@@ -456,5 +487,126 @@ class McpWorkspaceTest extends TestCase
         Sanctum::actingAs($this->clientUserA);
         $this->deleteJson("/api/mcp/tokens/{$created['id']}")->assertOk();
         $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    // --- Anexos -----------------------------------------------------------------------
+
+    public function test_model_reads_task_and_comment_attachments(): void
+    {
+        Storage::fake('local');
+
+        $briefing = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('briefing.md', "# Briefing\nEntregar até sexta."));
+        $csv = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('custos.csv', "item;valor\nhospedagem;120"), 'internal', comment: true);
+        $image = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->image('layout.png', 3000, 1500), comment: true);
+
+        $task = $this->data($this->as($this->professional)->tool(GetTask::class, ['task_id' => $this->sharedTaskA->uuid])->assertOk());
+        $this->assertEqualsCanonicalizing(['briefing.md', 'custos.csv', 'layout.png'], array_column($task['attachments'], 'name'));
+
+        $listed = $this->data($this->as($this->professional)->tool(ListTaskAttachments::class, ['task_id' => $this->sharedTaskA->uuid])->assertOk())['data'];
+        $this->assertNull(collect($listed)->firstWhere('id', $briefing)['comment_id']);
+        $this->assertNotNull(collect($listed)->firstWhere('id', $csv)['comment_id']);
+
+        $read = $this->data($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $briefing])->assertOk());
+        $this->assertSame("# Briefing\nEntregar até sexta.", $read['content']);
+        $this->assertFalse($read['has_more']);
+        $this->assertSame($this->sharedTaskA->uuid, $read['attachment']['task_id']);
+
+        $this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $csv])
+            ->assertOk()->assertSee('hospedagem;120');
+
+        $blocks = $this->content($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $image])->assertOk());
+        $this->assertSame(['text', 'image'], array_column($blocks, 'type'));
+        $this->assertStringContainsString('layout.png', $blocks[0]['text']);
+        $this->assertNotEmpty($blocks[1]['data']);
+    }
+
+    public function test_client_reads_only_visible_attachments(): void
+    {
+        Storage::fake('local');
+
+        $shared = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('escopo.txt', 'escopo aprovado'));
+        $internal = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('margem.txt', 'margem interna'), 'internal', comment: true);
+        $foreign = $this->attach($this->professional, $this->sharedTaskB, UploadedFile::fake()->createWithContent('b.txt', 'cliente B'));
+
+        $this->as($this->clientUserA)->tool(ReadTaskAttachment::class, ['attachment_id' => $shared])
+            ->assertOk()->assertSee('escopo aprovado');
+
+        foreach ([$internal, $foreign] as $id) {
+            $this->as($this->clientUserA)->tool(ReadTaskAttachment::class, ['attachment_id' => $id])
+                ->assertHasErrors(['Recurso não encontrado.'])
+                ->assertDontSee('margem interna')
+                ->assertDontSee('cliente B');
+        }
+
+        $this->as($this->clientUserA)->tool(ListTaskAttachments::class, ['task_id' => $this->sharedTaskA->uuid])
+            ->assertOk()->assertSee('escopo.txt')->assertDontSee('margem.txt');
+        $this->as($this->clientUserA)->tool(GetTask::class, ['task_id' => $this->sharedTaskA->uuid])
+            ->assertOk()->assertDontSee('margem.txt');
+        $this->as($this->clientUserA)->tool(ListTaskAttachments::class, ['task_id' => $this->sharedTaskB->uuid])
+            ->assertHasErrors(['Recurso não encontrado.']);
+    }
+
+    public function test_long_text_attachments_are_read_in_chunks(): void
+    {
+        Storage::fake('local');
+
+        $text = str_repeat('a', ReadTaskAttachment::CHUNK).'fim';
+        $id = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('longo.txt', $text));
+
+        $first = $this->data($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $id])->assertOk());
+        $this->assertTrue($first['has_more']);
+        $this->assertSame(ReadTaskAttachment::CHUNK, $first['next_offset']);
+
+        $second = $this->data($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $id, 'offset' => $first['next_offset']])->assertOk());
+        $this->assertSame('fim', $second['content']);
+        $this->assertFalse($second['has_more']);
+        $this->assertNull($second['next_offset']);
+    }
+
+    public function test_office_documents_are_read_as_text(): void
+    {
+        if (! class_exists(ZipArchive::class)) {
+            $this->markTestSkipped('Extensão zip indisponível.');
+        }
+
+        Storage::fake('local');
+
+        $docx = $this->zip([
+            'word/document.xml' => '<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>Contrato &amp; escopo</w:t></w:r></w:p><w:p><w:r><w:t>Cláusula 2</w:t></w:r></w:p></w:body></w:document>',
+        ]);
+        $xlsx = $this->zip([
+            'xl/workbook.xml' => '<workbook><sheets><sheet name="Custos"/></sheets></workbook>',
+            'xl/sharedStrings.xml' => '<sst><si><t>Servidor</t></si></sst>',
+            'xl/worksheets/sheet1.xml' => '<worksheet><sheetData><row><c t="s"><v>0</v></c><c><v>99.9</v></c></row></sheetData></worksheet>',
+        ]);
+
+        $docId = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('contrato.docx', $docx));
+        $xlsId = $this->attach($this->professional, $this->sharedTaskA, UploadedFile::fake()->createWithContent('custos.xlsx', $xlsx), comment: true);
+
+        $doc = $this->data($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $docId])->assertOk());
+        $this->assertSame("Contrato & escopo\nCláusula 2", $doc['content']);
+
+        $xls = $this->data($this->as($this->professional)->tool(ReadTaskAttachment::class, ['attachment_id' => $xlsId])->assertOk());
+        $this->assertSame("--- Custos ---\nServidor\t99.9", $xls['content']);
+    }
+
+    /**
+     * @param  array<string, string>  $entries
+     */
+    private function zip(array $entries): string
+    {
+        $file = tempnam(sys_get_temp_dir(), 'zip');
+        $zip = new ZipArchive;
+        $zip->open($file, ZipArchive::OVERWRITE);
+
+        foreach ($entries as $name => $content) {
+            $zip->addFromString($name, $content);
+        }
+
+        $zip->close();
+        $data = (string) file_get_contents($file);
+        unlink($file);
+
+        return $data;
     }
 }
