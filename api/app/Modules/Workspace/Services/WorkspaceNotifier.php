@@ -2,22 +2,25 @@
 
 namespace App\Modules\Workspace\Services;
 
+use App\Modules\Notification\DTOs\NotificationMessage;
+use App\Modules\Notification\Services\NotificationDispatcher;
 use App\Modules\Tenant\Support\Facades\TenantContext;
 use App\Modules\User\Models\User;
 use App\Modules\Workspace\Models\Project;
 use App\Modules\Workspace\Models\Task;
-use App\Modules\Workspace\Notifications\WorkspaceNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Notification;
 
 /**
- * Entrega notificações respeitando as mesmas Policies da aplicação:
- * um destinatário só é notificado se puder visualizar o recurso. Conteúdo
- * interno nunca é enviado a usuários de cliente.
+ * Seleciona os destinatários das notificações do Workspace respeitando as
+ * mesmas Policies da aplicação: um destinatário só é notificado se puder
+ * visualizar o recurso, e conteúdo interno nunca vai a usuários de cliente.
+ * A entrega (in-app, e-mail...) fica a cargo do NotificationDispatcher.
  */
 class WorkspaceNotifier
 {
+    public function __construct(private readonly NotificationDispatcher $dispatcher) {}
+
     /**
      * @param  iterable<User|null>  $recipients
      */
@@ -36,6 +39,8 @@ class WorkspaceNotifier
             $kind,
             $title,
             $message,
+            $this->url("/w/tasks/{$task->uuid}"),
+            'Abrir tarefa',
             [
                 'task_id' => $task->uuid,
                 'task_title' => $task->title,
@@ -61,6 +66,8 @@ class WorkspaceNotifier
             $kind,
             $title,
             $message,
+            $this->url("/w/projects/{$project->uuid}"),
+            'Abrir projeto',
             [
                 'project_id' => $project->uuid,
                 'project_name' => $project->name,
@@ -100,7 +107,7 @@ class WorkspaceNotifier
      * @param  Collection<int, User>  $recipients
      * @param  array<string, mixed>  $payload
      */
-    private function send(Collection $recipients, string $kind, string $title, string $message, array $payload): void
+    private function send(Collection $recipients, string $kind, string $title, string $message, string $url, string $label, array $payload): void
     {
         if ($recipients->isEmpty()) {
             return;
@@ -108,10 +115,20 @@ class WorkspaceNotifier
 
         $actor = auth()->user();
 
-        Notification::send($recipients, new WorkspaceNotification($kind, $title, $message, [
-            ...$payload,
-            'tenant_id' => TenantContext::tenantId(),
-            'actor' => $actor instanceof User ? $actor->name : null,
-        ]));
+        $this->dispatcher->send($recipients, new NotificationMessage(
+            kind: $kind,
+            title: $title,
+            body: $message,
+            actionUrl: $url,
+            actionLabel: $label,
+            data: $payload,
+            tenantId: TenantContext::tenantId(),
+            actorName: $actor instanceof User ? $actor->name : null,
+        ));
+    }
+
+    private function url(string $path): string
+    {
+        return config('notifications.frontend_url').$path;
     }
 }
