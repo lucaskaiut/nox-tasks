@@ -42,21 +42,11 @@ export default function BoardPage() {
   const canAdd = Boolean(selected) && !selected?.is_archived && can(Permission.TASK_CREATE)
 
   return (
-    <div className="ws-rise">
-      <PageHeader
-        eyebrow="Kanban"
-        title={board.data.board.name}
-        description={board.data.board.description ?? 'Todas as tarefas, de todos os projetos, em um só fluxo.'}
-        actions={
-          canManage(Permission.BOARD_MANAGE) && (
-            <ButtonLink to="/w/board/settings" icon={<Settings2 className="size-3.5" />}>
-              Configurar colunas
-            </ButtonLink>
-          )
-        }
-      />
-
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+    // Ocupa a altura útil da viewport (descontados cabeçalho e respiros do layout)
+    // para que cada coluna tenha altura fixa e role internamente.
+    <div className="ws-rise flex h-[calc(100dvh-176px)] min-h-[420px] flex-col md:h-[calc(100dvh-128px)]">
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="mr-1 truncate text-[18px] leading-tight font-semibold tracking-[-0.01em] text-ws-ink">{board.data.board.name}</h1>
         <SelectInput aria-label="Filtrar por projeto" value={project} onChange={(e) => setProject(e.target.value)} className="h-8 w-auto min-w-52">
           <option value="">Todos os projetos</option>
           {projects.data?.data.map((item) => (
@@ -78,6 +68,14 @@ export default function BoardPage() {
         )}
         <span className="tabular-nums text-[12px] text-ws-ink-3">{board.data.tasks.length} tarefa(s)</span>
         {!canMove && <span className="text-[12px] text-ws-ink-3">Visualização somente leitura.</span>}
+        {!canAdd && can(Permission.TASK_CREATE) && (
+          <span className="text-[12px] text-ws-ink-3">Selecione um projeto para criar tarefas no quadro.</span>
+        )}
+        {canManage(Permission.BOARD_MANAGE) && (
+          <ButtonLink to="/w/board/settings" icon={<Settings2 className="size-3.5" />} className="ml-auto">
+            Configurar colunas
+          </ButtonLink>
+        )}
       </div>
 
       <KanbanBoard
@@ -85,13 +83,10 @@ export default function BoardPage() {
         tasks={board.data.tasks}
         canMove={canMove}
         showProject={!project}
+        className="min-h-0 flex-1 pb-2"
         onMove={(id, column, _position, after) => move.mutateAsync({ id, column, after })}
         onAdd={canAdd ? (columnId) => setNewTaskColumn(canManage(Permission.TASK_UPDATE) ? columnId : '') : undefined}
       />
-
-      {!canAdd && can(Permission.TASK_CREATE) && (
-        <p className="mt-1 text-[12px] text-ws-ink-3">Selecione um projeto para criar tarefas direto no quadro.</p>
-      )}
 
       <TaskFormSheet
         open={newTaskColumn !== null}

@@ -54,6 +54,7 @@ export function KanbanBoard({
   onMove,
   onAdd,
   showProject = false,
+  className,
 }: {
   columns: BoardColumn[]
   tasks: Task[]
@@ -65,6 +66,8 @@ export function KanbanBoard({
   onMove: (taskId: string, columnId: string, position: number, afterId: string | null) => Promise<unknown>
   onAdd?: (columnId: string) => void
   showProject?: boolean
+  /** Classes extras do contêiner; com altura limitada, cada coluna rola internamente. */
+  className?: string
 }) {
   const [lanes, setLanes] = useState<Lanes>(() => buildLanes(columns, tasks))
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -148,7 +151,7 @@ export function KanbanBoard({
         setLanes(buildLanes(columns, tasks))
       }}
     >
-      <div className="ws-scroll-x -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:snap-none md:px-0">
+      <div className={cn('ws-scroll-x -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:snap-none md:px-0', className)}>
         {columns.map((column) => (
           <Lane key={column.id} column={column} ids={lanes[column.id] ?? []} byId={byId} canMove={canMove} onAdd={onAdd} showProject={showProject} />
         ))}
@@ -182,7 +185,7 @@ function Lane({
     <section
       aria-label={`Coluna ${column.name}`}
       className={cn(
-        'flex w-[84vw] shrink-0 snap-start flex-col rounded-ws-lg bg-ws-hover/70 transition-colors sm:w-[300px]',
+        'flex min-h-0 w-[84vw] shrink-0 snap-start flex-col rounded-ws-lg bg-ws-hover/70 transition-colors sm:w-[300px]',
         isOver && 'bg-ws-accent-tint',
       )}
     >
@@ -199,7 +202,7 @@ function Lane({
         )}
       </header>
       <SortableContext id={column.id} items={ids} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2 p-2">
+        <div ref={setNodeRef} className="ws-scroll-y flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto p-2">
           {ids.map((id) => {
             const task = byId.get(id)
 

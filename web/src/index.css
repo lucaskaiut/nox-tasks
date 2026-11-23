@@ -344,7 +344,8 @@ body {
   color: var(--ws-ink-3);
 }
 
-.ws-scroll-x {
+.ws-scroll-x,
+.ws-scroll-y {
   scrollbar-width: thin;
   scrollbar-color: var(--ws-line-strong) transparent;
 }
