@@ -14,6 +14,7 @@ import { Pager } from './parts/Pager'
 const STATES = [
   { value: 'open', label: 'Em aberto' },
   { value: 'waiting', label: 'Aguardando retorno' },
+  { value: 'publishing', label: 'Aguardando publicação' },
   { value: 'done', label: 'Concluídas' },
   { value: 'closed', label: 'Encerradas' },
   { value: '', label: 'Todas' },

@@ -1,6 +1,6 @@
 export type Priority = 'low' | 'normal' | 'high' | 'urgent'
 export type Visibility = 'internal' | 'shared'
-export type ColumnKind = 'open' | 'waiting' | 'done' | 'cancelled'
+export type ColumnKind = 'open' | 'waiting' | 'publishing' | 'done' | 'cancelled'
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
 export type SubtaskStatus = 'pending' | 'in_progress' | 'done'
 export type ClientStatus = 'active' | 'inactive'
@@ -177,6 +177,7 @@ export interface Dashboard {
     active_projects: number
     open_tasks: number
     waiting_tasks: number
+    publishing_tasks: number
     overdue_tasks: number
     completed_tasks: number
     completed_last_7_days: number

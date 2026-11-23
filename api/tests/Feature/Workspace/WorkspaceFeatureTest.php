@@ -207,7 +207,7 @@ class WorkspaceFeatureTest extends TestCase
         Sanctum::actingAs($this->createAdmin($this->createTenantWithRoles(['domain' => 'novo.com.br'])));
 
         $names = collect($this->getJson('/api/board')->assertOk()->json('data.board.columns'))->pluck('name');
-        $this->assertSame(['A fazer', 'Em andamento', 'Aguardando retorno', 'Concluído'], $names->all());
+        $this->assertSame(['A fazer', 'Em andamento', 'Aguardando retorno', 'Aguardando publicação', 'Concluído'], $names->all());
 
         $this->getJson('/api/board')->assertOk();
         $this->assertSame(2, Board::query()->withoutGlobalScopes()->count());
@@ -229,6 +229,47 @@ class WorkspaceFeatureTest extends TestCase
         $this->assertSame(['Em revisão', 'A fazer', 'Em andamento', 'Aguardando', 'Concluído', 'Cancelado'], $names->all());
 
         $this->patchJson("/api/board/columns/{$review}", ['color' => 'red'])->assertUnprocessable();
+    }
+
+    public function test_tasks_awaiting_publication_stay_open(): void
+    {
+        $column = $this->postJson('/api/board/columns', ['name' => 'Aguardando publicação', 'kind' => 'publishing'])
+            ->assertCreated()->assertJsonPath('data.kind', 'publishing')->json('data.id');
+
+        $this->postJson("/api/tasks/{$this->sharedTaskA->uuid}/move", ['column_id' => $column])
+            ->assertOk()
+            ->assertJsonPath('data.status.kind', 'publishing')
+            ->assertJsonPath('data.completed_at', null);
+
+        $ids = collect($this->getJson('/api/tasks?state=publishing')->assertOk()->json('data'))->pluck('id');
+        $this->assertSame([$this->sharedTaskA->uuid], $ids->all());
+
+        $open = collect($this->getJson('/api/tasks?state=open')->assertOk()->json('data'))->pluck('id');
+        $this->assertContains($this->sharedTaskA->uuid, $open->all());
+
+        $dashboard = $this->getJson('/api/workspace/dashboard')->assertOk()->json('data');
+        $this->assertSame(1, $dashboard['metrics']['publishing_tasks']);
+        $this->assertSame(1, collect($dashboard['status_distribution'])->firstWhere('kind', 'publishing')['total']);
+    }
+
+    public function test_migration_adds_publishing_column_before_closed_columns(): void
+    {
+        $board = Board::query()->firstOrFail();
+        $migration = require database_path('migrations/2026_11_23_000001_add_publishing_column_to_boards.php');
+
+        $migration->up();
+        $migration->up();
+
+        $names = $board->columns()->orderBy('position')->pluck('name')->all();
+        $this->assertSame(['A fazer', 'Em andamento', 'Aguardando', 'Aguardando publicação', 'Concluído', 'Cancelado'], $names);
+
+        $publishing = $board->columns()->where('kind', ColumnKind::PUBLISHING->value)->firstOrFail();
+        $this->sharedTaskA->forceFill(['board_column_id' => $publishing->getKey()])->save();
+
+        $migration->down();
+
+        $this->assertSame(0, $board->columns()->where('kind', ColumnKind::PUBLISHING->value)->count());
+        $this->assertNotSame($publishing->getKey(), $this->sharedTaskA->fresh()->board_column_id);
     }
 
     public function test_deleting_column_with_tasks_requires_destination(): void

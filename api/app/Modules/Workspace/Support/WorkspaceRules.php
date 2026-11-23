@@ -191,7 +191,7 @@ final class WorkspaceRules
             'priority' => ['nullable'],
             'priority.*' => [Rule::enum(TaskPriority::class)],
             'column' => ['nullable', 'uuid'],
-            'state' => ['nullable', Rule::in(['open', 'waiting', 'done', 'cancelled', 'closed'])],
+            'state' => ['nullable', Rule::in(['open', 'waiting', 'publishing', 'done', 'cancelled', 'closed'])],
             'visibility' => ['nullable', Rule::enum(Visibility::class)],
             'tag' => ['nullable', 'string', 'max:40'],
             'overdue' => ['nullable', 'boolean'],

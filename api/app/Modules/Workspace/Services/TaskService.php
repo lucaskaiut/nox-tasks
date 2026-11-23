@@ -468,8 +468,9 @@ class TaskService
     private function kindsFor(string $state): array
     {
         return match ($state) {
-            'open' => [ColumnKind::OPEN->value, ColumnKind::WAITING->value],
+            'open' => ColumnKind::openValues(),
             'waiting' => [ColumnKind::WAITING->value],
+            'publishing' => [ColumnKind::PUBLISHING->value],
             'done' => [ColumnKind::DONE->value],
             'cancelled' => [ColumnKind::CANCELLED->value],
             'closed' => ColumnKind::closedValues(),

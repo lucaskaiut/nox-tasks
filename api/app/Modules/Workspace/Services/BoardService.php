@@ -23,6 +23,7 @@ class BoardService
         ['name' => 'A fazer', 'color' => '#71717a', 'kind' => ColumnKind::OPEN],
         ['name' => 'Em andamento', 'color' => '#2563eb', 'kind' => ColumnKind::OPEN],
         ['name' => 'Aguardando retorno', 'color' => '#d97706', 'kind' => ColumnKind::WAITING],
+        ['name' => 'Aguardando publicação', 'color' => '#7c3aed', 'kind' => ColumnKind::PUBLISHING],
         ['name' => 'Concluído', 'color' => '#16a34a', 'kind' => ColumnKind::DONE],
     ];
 

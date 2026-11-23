@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create_board_column')]
-#[Description('Adiciona uma coluna ao quadro geral. kind: open|waiting|done|cancelled. position opcional (0 = primeira).')]
+#[Description('Adiciona uma coluna ao quadro geral. kind: open|waiting|publishing|done|cancelled. position opcional (0 = primeira).')]
 class CreateBoardColumn extends WorkspaceTool
 {
     public function schema(JsonSchema $schema): array
@@ -22,7 +22,7 @@ class CreateBoardColumn extends WorkspaceTool
         return [
             'name' => $schema->string()->max(60)->required(),
             'color' => $schema->string()->pattern('^#[0-9a-fA-F]{6}$'),
-            'kind' => $schema->string()->enum(['open', 'waiting', 'done', 'cancelled']),
+            'kind' => $schema->string()->enum(['open', 'waiting', 'publishing', 'done', 'cancelled']),
             'position' => $schema->integer()->min(0)->max(100),
         ];
     }

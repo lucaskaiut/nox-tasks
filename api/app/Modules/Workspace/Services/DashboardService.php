@@ -30,7 +30,7 @@ class DashboardService
     {
         $tasks = fn (): Builder => Task::query()->visibleTo($actor);
         $inKinds = fn (array $kinds): Builder => $tasks()->whereHas('column', fn (Builder $c) => $c->whereIn('kind', $kinds));
-        $openKinds = [ColumnKind::OPEN->value, ColumnKind::WAITING->value];
+        $openKinds = ColumnKind::openValues();
 
         $byKind = $tasks()
             ->join('board_columns', 'board_columns.id', '=', 'tasks.board_column_id')
@@ -52,6 +52,7 @@ class DashboardService
                     ->count(),
                 'open_tasks' => $inKinds($openKinds)->count(),
                 'waiting_tasks' => $inKinds([ColumnKind::WAITING->value])->count(),
+                'publishing_tasks' => $inKinds([ColumnKind::PUBLISHING->value])->count(),
                 'overdue_tasks' => $this->overdue($inKinds($openKinds))->count(),
                 'completed_tasks' => $inKinds([ColumnKind::DONE->value])->count(),
                 'completed_last_7_days' => $inKinds([ColumnKind::DONE->value])

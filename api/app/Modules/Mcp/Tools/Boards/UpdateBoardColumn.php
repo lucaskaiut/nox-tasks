@@ -23,7 +23,7 @@ class UpdateBoardColumn extends WorkspaceTool
             'column_id' => $schema->string()->format('uuid')->required(),
             'name' => $schema->string()->max(60),
             'color' => $schema->string()->pattern('^#[0-9a-fA-F]{6}$'),
-            'kind' => $schema->string()->enum(['open', 'waiting', 'done', 'cancelled']),
+            'kind' => $schema->string()->enum(['open', 'waiting', 'publishing', 'done', 'cancelled']),
         ];
     }
 

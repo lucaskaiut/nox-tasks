@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list_tasks')]
-#[Description('Lista tarefas visíveis ao usuário. Filtros: search (título/descrição), project, client, assignee (id | "me" | "none"), priority (lista), state (open|waiting|done|cancelled|closed), column, tag, overdue, due_from, due_to, sort (due_at|priority|created_at|updated_at|title|position), direction. Paginado.')]
+#[Description('Lista tarefas visíveis ao usuário. Filtros: search (título/descrição), project, client, assignee (id | "me" | "none"), priority (lista), state (open|waiting|publishing|done|cancelled|closed), column, tag, overdue, due_from, due_to, sort (due_at|priority|created_at|updated_at|title|position), direction. Paginado.')]
 #[IsReadOnly]
 class ListTasks extends WorkspaceTool
 {
@@ -28,7 +28,7 @@ class ListTasks extends WorkspaceTool
             'client' => $schema->string()->format('uuid'),
             'assignee' => $schema->string()->description('ID do responsável, "me" ou "none".'),
             'priority' => $schema->array()->items($schema->string()->enum(['low', 'normal', 'high', 'urgent'])),
-            'state' => $schema->string()->enum(['open', 'waiting', 'done', 'cancelled', 'closed']),
+            'state' => $schema->string()->enum(['open', 'waiting', 'publishing', 'done', 'cancelled', 'closed']),
             'column' => $schema->string()->format('uuid')->description('ID da coluna (status).'),
             'visibility' => $schema->string()->enum(['internal', 'shared']),
             'tag' => $schema->string()->max(40),

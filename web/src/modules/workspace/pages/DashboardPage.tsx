@@ -14,6 +14,7 @@ import type { Dashboard } from '../lib/types'
 const KIND_COLORS: Record<string, string> = {
   open: 'var(--ws-ink-2)',
   waiting: 'var(--ws-warn)',
+  publishing: '#7c3aed',
   done: 'var(--ws-ok)',
   cancelled: 'var(--ws-line-strong)',
 }
@@ -119,11 +120,12 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-y-5 rounded-ws bg-ws-panel shadow-ws px-5 py-5 md:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-y-5 rounded-ws bg-ws-panel shadow-ws px-5 py-5 md:grid-cols-3 xl:grid-cols-6">
         <Stat label={isClient ? 'Em andamento' : 'Projetos ativos'} value={m.active_projects} />
         <Stat label="Tarefas abertas" value={m.open_tasks} hint={m.my_open_tasks !== null ? `${m.my_open_tasks} com você` : undefined} />
         <Stat label="Atrasadas" value={m.overdue_tasks} tone={m.overdue_tasks > 0 ? 'danger' : undefined} />
         <Stat label={isClient ? 'Aguardando você' : 'Aguardando retorno'} value={m.waiting_tasks} />
+        <Stat label="Aguardando publicação" value={m.publishing_tasks} />
         <Stat label="Concluídas" value={m.completed_tasks} hint={`${m.completed_last_7_days} nos últimos 7 dias`} tone="accent" />
       </div>
 

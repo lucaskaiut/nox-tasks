@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_dashboard')]
-#[Description('Indicadores do usuário: projetos ativos, tarefas abertas/atrasadas/concluídas/aguardando retorno, distribuição por status e prioridade, tarefas prioritárias, próximos prazos e atividades recentes — sempre restritos ao escopo do usuário.')]
+#[Description('Indicadores do usuário: projetos ativos, tarefas abertas/atrasadas/concluídas/aguardando retorno/aguardando publicação, distribuição por status e prioridade, tarefas prioritárias, próximos prazos e atividades recentes — sempre restritos ao escopo do usuário.')]
 #[IsReadOnly]
 class GetDashboard extends WorkspaceTool
 {

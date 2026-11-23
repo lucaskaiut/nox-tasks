@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list_board_columns')]
-#[Description('Lista as colunas do quadro geral, em ordem. kind indica o significado: open, waiting (aguardando retorno), done (concluída), cancelled.')]
+#[Description('Lista as colunas do quadro geral, em ordem. kind indica o significado: open, waiting (aguardando retorno), publishing (aguardando publicação), done (concluída), cancelled.')]
 #[IsReadOnly]
 class ListBoardColumns extends WorkspaceTool
 {

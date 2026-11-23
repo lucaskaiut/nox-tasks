@@ -78,6 +78,7 @@ export const PROJECT_STATUSES: Array<{ value: ProjectStatus; label: string }> = 
 export const COLUMN_KINDS: Array<{ value: ColumnKind; label: string; hint: string }> = [
   { value: 'open', label: 'Em aberto', hint: 'Trabalho a fazer ou em execução' },
   { value: 'waiting', label: 'Aguardando retorno', hint: 'Depende de resposta (ex.: do cliente)' },
+  { value: 'publishing', label: 'Aguardando publicação', hint: 'Pronta, aguardando ir para produção' },
   { value: 'done', label: 'Concluída', hint: 'Marca a tarefa como concluída' },
   { value: 'cancelled', label: 'Cancelada', hint: 'Fora dos indicadores de progresso' },
 ]

@@ -27,7 +27,7 @@ class AnalyzeProjectPrompt extends WorkspacePrompt
         return <<<TXT
 Analise a situação do projeto abaixo e responda em português do Brasil com:
 1. Visão geral (status, progresso percentual, prazo do projeto).
-2. Riscos e gargalos (tarefas atrasadas, urgentes sem responsável, concentração de trabalho, itens aguardando retorno).
+2. Riscos e gargalos (tarefas atrasadas, urgentes sem responsável, concentração de trabalho, itens aguardando retorno ou publicação).
 3. Próximos passos recomendados, em ordem de prioridade.
 Baseie-se apenas nos dados fornecidos; use as ferramentas (ex.: get_task) se precisar de detalhes. Não altere nada sem confirmação do usuário.
 
